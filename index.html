@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Shreya Sairam: AI, data analytics and energy projects with live demos.">
+<title>Shreya Sairam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a working engineer's notebook. One featured case study, one team case study, then a two column wall of demo clips. */
+:root{
+  --paper:#F5F4EF; --card:#FFFFFF; --ink:#1D2033; --soft:#5B5F75; --line:#E2E0D8;
+  --navy:#1E2761; --navy-deep:#141B47; --gold:#B88A12; --gold-soft:#E4CD82; --ice:#D6E2FB;
+  --display:"Fraunces", Georgia, serif;
+  --body:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1129; --card:#171A3D; --ink:#ECEDF6; --soft:#A7AAC6; --line:#2A2E57;
+    --navy:#232C72; --navy-deep:#0B0E28; --gold:#E2C26A; --gold-soft:#E9D493; --ice:#C9D7F7;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1129; --card:#171A3D; --ink:#ECEDF6; --soft:#A7AAC6; --line:#2A2E57;
+  --navy:#232C72; --navy-deep:#0B0E28; --gold:#E2C26A; --gold-soft:#E9D493; --ice:#C9D7F7;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+
+/* hero */
+.hero{background:linear-gradient(165deg,var(--navy-deep),var(--navy));color:var(--ice);padding-block:52px 44px}
+.hero-grid{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
+.portrait{width:124px;height:124px;border-radius:50%;overflow:hidden;border:2px solid var(--gold-soft)}
+.portrait img{width:100%;height:100%;object-fit:cover;display:block}
+.hero h1{font-family:var(--display);font-weight:600;font-size:clamp(34px,6vw,54px);line-height:1.02;margin:0 0 8px;color:#FFFFFF}
+.role{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--gold-soft);margin:0 0 14px}
+.intro{max-width:60ch;margin:0 0 18px;opacity:.92}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-family:var(--mono);font-size:12.5px;color:var(--ice);text-decoration:none;border:1px solid rgba(214,226,251,.35);padding:6px 13px;border-radius:999px;transition:border-color .15s,background .15s}
+a.chip:hover{border-color:var(--gold-soft);background:rgba(228,205,130,.1)}
+.chip.sel{user-select:all}
+@media (max-width:640px){.hero-grid{grid-template-columns:1fr;justify-items:start}}
+
+/* section labels */
+.label{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;font-weight:500}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(26px,3.6vw,36px);line-height:1.1;margin:0 0 14px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:22px;line-height:1.2;margin:0 0 10px;text-wrap:balance}
+p{margin:0}
+.muted{color:var(--soft)}
+
+/* featured */
+.feature{padding-block:56px;border-bottom:1px solid var(--line)}
+.feature-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:start}
+.feature-grid > div{min-width:0}
+@media (max-width:860px){.feature-grid{grid-template-columns:1fr}}
+.media{position:relative;border-radius:14px;overflow:hidden;background:var(--navy-deep);aspect-ratio:16/9;max-width:100%}
+.media video,.media img{width:100%;height:100%;object-fit:cover;display:block}
+.stack{display:flex;flex-direction:column;gap:14px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-block:4px}
+.fact{border-top:2px solid var(--gold);padding-top:8px}
+.fact b{display:block;font-family:var(--display);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.fact span{font-size:12.5px;color:var(--soft);line-height:1.35;display:block;margin-top:4px}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.proj .btns{margin-top:2px}
+.btn{display:inline-block;font-family:var(--mono);font-size:13px;text-decoration:none;padding:9px 16px;border-radius:8px;border:1px solid var(--navy);color:var(--navy);transition:background .15s,color .15s}
+.btn.primary{background:var(--navy);color:#FFFFFF}
+.btn:hover{background:var(--navy);color:#FFFFFF}
+:root[data-theme="dark"] .btn{border-color:var(--gold-soft);color:var(--gold-soft)}
+:root[data-theme="dark"] .btn.primary{background:var(--gold-soft);color:var(--navy-deep)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .btn{border-color:var(--gold-soft);color:var(--gold-soft)}
+  :root:not([data-theme="light"]) .btn.primary{background:var(--gold-soft);color:var(--navy-deep)}
+}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:var(--mono);font-size:11.5px;color:var(--soft);background:var(--card);border:1px solid var(--line);padding:3px 9px;border-radius:6px}
+.credit{font-size:14px;color:var(--soft);border-left:2px solid var(--line);padding-left:12px}
+
+/* projects grid */
+.projects{padding-block:56px 64px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:28px;margin-top:22px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.proj{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.proj .media{border-radius:0;aspect-ratio:16/10}
+.proj .media video{cursor:pointer}
+.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,14,40,.25);pointer-events:none;transition:opacity .2s}
+.play svg{width:52px;height:52px}
+.proj.playing .play{opacity:0}
+.proj-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;flex:1}
+.kind{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.proj p{font-size:15px}
+.result{font-size:14.5px;color:var(--soft)}
+.proj .tags{margin-top:auto;padding-top:6px}
+
+footer{background:var(--navy-deep);color:var(--ice);padding-block:34px 40px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-between}
+footer h3{color:#FFFFFF;margin:0 0 4px}
+footer p{font-size:14px;opacity:.8;max-width:56ch}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div class="portrait"><img src="media/portrait.jpg" alt="Shreya Sairam"></div>
+    <div>
+      <h1>Shreya Sairam</h1>
+      <p class="role">AI · DATA ANALYTICS · ENERGY</p>
+      <p class="intro">Master of Information Systems graduate from the University of Melbourne. I like problems where the data has to be checked before anyone can trust the answer, from chiller plants to batteries to football matches.</p>
+      <div class="links">
+        <a class="chip" href="https://linkedin.com/in/shreya-sairam-00b344253" target="_blank" rel="noopener">LinkedIn</a>
+        <span class="chip sel">shreyasairam24@gmail.com</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="feature" id="out-of-phase">
+    <div class="wrap feature-grid">
+      <div class="stack">
+        <p class="label">Featured · Energy · Independent research</p>
+        <h2>Out of Phase</h2>
+        <p><strong>Who does your battery really work for?</strong> Big batteries earn money by following the electricity price, which is set for a whole region. The strain on the grid happens at the local substation on your street. I used real data from Sydney and Delhi to test whether the two line up.</p>
+        <div class="facts">
+          <div class="fact"><b>42%</b><span>of days a Sydney substation peak lands near the price peak</span></div>
+          <div class="fact"><b>24%</b><span>in Sydney summers, when the grid is most stretched</span></div>
+          <div class="fact"><b>40%</b><span>the same check for Delhi</span></div>
+        </div>
+        <p class="muted">The live demo lets you run a real day yourself: pick Sydney or Delhi and a battery size, then balance profit against the street with a slider or by dragging the release window.</p>
+        <div class="btns">
+          <a class="btn primary" href="out-of-phase/index.html">Open the live demo</a>
+          <a class="btn" href="out-of-phase/lab.html">Explore the lab</a>
+        </div>
+        <div class="tags"><span class="tag">Python</span><span class="tag">Optimisation</span><span class="tag">AEMO data</span><span class="tag">Ausgrid substations</span><span class="tag">IEX prices</span><span class="tag">Delhi SLDC load</span></div>
+      </div>
+      <div>
+        <div class="media"><video src="out-of-phase/media/pylon.mp4" poster="out-of-phase/media/towers.jpg" autoplay muted loop playsinline aria-label="Power pylon footage"></video></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="feature" id="lumen">
+    <div class="wrap feature-grid">
+      <div class="stack">
+        <p class="label">Team project · Smart cities · FEIT Hackathon 2026</p>
+        <h2>Lumen</h2>
+        <p>Cremorne's offices compete with the spare room at home, yet most of the precinct is data dark. Lumen turns office windows into privacy safe pedestrian counters, models street shade with a digital twin, and recommends cooler, quieter walking routes. The council gets street fixes ranked by walkers helped per dollar.</p>
+        <div class="facts">
+          <div class="fact"><b>Top 5</b><span>of 15 finalist teams</span></div>
+          <div class="fact"><b>SMEC</b><span>Spot Prize winner</span></div>
+          <div class="fact"><b>304</b><span>simulated trips across 76 buildings</span></div>
+        </div>
+        <p class="credit">Built with team xMyst. My role: problem research, business case and the pitch.</p>
+        <div class="btns"><a class="btn primary" href="https://lumen.yuanhaofeng.com/" target="_blank" rel="noopener">Open the live prototype</a></div>
+        <div class="tags"><span class="tag">YOLO computer vision</span><span class="tag">Crowd forecasting</span><span class="tag">pvlib</span><span class="tag">OpenStreetMap</span><span class="tag">Route optimisation</span></div>
+      </div>
+      <div>
+        <div class="media"><img src="out-of-phase/media/syd-day.jpg" alt="City street in daylight" style="object-position:center 30%"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="projects" id="projects">
+    <div class="wrap">
+      <p class="label">Working demos</p>
+      <h2>More projects</h2>
+      <p class="muted" style="max-width:62ch">Each one is a working app built on open data. Watch the clip, or open it live and try it yourself.</p>
+      <div class="grid">
+
+        <article class="proj">
+          <div class="media"><video src="media/attendance.mp4" poster="media/attendance.jpg" preload="none" playsinline muted aria-label="Attendance system demo"></video><div class="play" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="25" fill="rgba(255,255,255,.92)"/><path d="M21 16l16 10-16 10z" fill="#1E2761"/></svg></div></div>
+          <div class="proj-body">
+            <span class="kind">Computer vision · Published in IJERT</span>
+            <h3>Facial Recognition Attendance</h3>
+            <p>Check in by webcam or photo. The system finds the face, identifies the person and records the time in SQLite as present or late against the class start time. Anyone missing shows as absent.</p>
+            <p class="result">93.8% accuracy on held out faces. Strangers are refused, not guessed.</p>
+            <div class="btns"><a class="btn primary" href="https://shreyasairam-projects.streamlit.app/attendance" target="_blank" rel="noopener">Try it live</a><a class="btn" href="https://github.com/ShreyaSairam/portfolio/tree/main/attendance_system" target="_blank" rel="noopener">Code</a></div>
+
+            <div class="tags"><span class="tag">OpenCV</span><span class="tag">Haar cascade</span><span class="tag">LBPH</span><span class="tag">SQLite</span></div>
+          </div>
+        </article>
+
+        <article class="proj">
+          <div class="media"><video src="media/signspeak.mp4" poster="media/signspeak.jpg" preload="none" playsinline muted aria-label="SignSpeak demo"></video><div class="play" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="25" fill="rgba(255,255,255,.92)"/><path d="M21 16l16 10-16 10z" fill="#1E2761"/></svg></div></div>
+          <div class="proj-body">
+            <span class="kind">Computer vision · Accessibility</span>
+            <h3>SignSpeak</h3>
+            <p>Reads American Sign Language letters from your webcam and spells them out as you sign. No camera? Demo mode spells any word from images the model never saw.</p>
+            <p class="result">95.2% accuracy on 7,172 separate test images, letters A to Y (J and Z need movement).</p>
+            <div class="btns"><a class="btn primary" href="https://shreyasairam-projects.streamlit.app/signspeak" target="_blank" rel="noopener">Try it live</a><a class="btn" href="https://github.com/ShreyaSairam/portfolio/tree/main/signspeak" target="_blank" rel="noopener">Code</a></div>
+
+            <div class="tags"><span class="tag">HOG features</span><span class="tag">PCA</span><span class="tag">SVM</span><span class="tag">streamlit-webrtc</span><span class="tag">SQLite</span></div>
+          </div>
+        </article>
+
+        <article class="proj">
+          <div class="media"><video src="media/football.mp4" poster="media/football.jpg" preload="none" playsinline muted aria-label="Football dashboard demo"></video><div class="play" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="25" fill="rgba(255,255,255,.92)"/><path d="M21 16l16 10-16 10z" fill="#1E2761"/></svg></div></div>
+          <div class="proj-body">
+            <span class="kind">Data analytics · Dashboard</span>
+            <h3>Football Analytics Dashboard</h3>
+            <p>All seven of France's 2018 World Cup matches, turned from thousands of raw event rows into shot maps, expected goals (xG), pass heatmaps and a player explorer.</p>
+            <p class="result">Stored in SQLite, with a SQL explorer to run your own queries on the match data.</p>
+            <div class="btns"><a class="btn primary" href="https://shreyasairam-projects.streamlit.app/football" target="_blank" rel="noopener">Try it live</a><a class="btn" href="https://github.com/ShreyaSairam/portfolio/tree/main/football_dashboard" target="_blank" rel="noopener">Code</a></div>
+
+            <div class="tags"><span class="tag">pandas</span><span class="tag">Plotly</span><span class="tag">Streamlit</span><span class="tag">SQLite</span></div>
+          </div>
+        </article>
+
+        <article class="proj">
+          <div class="media"><video src="media/wanderwise.mp4" poster="media/wanderwise.jpg" preload="none" playsinline muted aria-label="WanderWise demo"></video><div class="play" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="25" fill="rgba(255,255,255,.92)"/><path d="M21 16l16 10-16 10z" fill="#1E2761"/></svg></div></div>
+          <div class="proj-body">
+            <span class="kind">Recommender · Generative AI</span>
+            <h3>WanderWise</h3>
+            <p>A travel assistant that ranks 51 real destinations against your budget, climate and style, shows live weather for where you are, and answers follow up questions through a Gemini chat panel.</p>
+            <p class="result">Hybrid recommender (content based plus collaborative filtering), with accounts and saved favourites.</p>
+            <div class="btns"><a class="btn primary" href="https://shreyasairam-projects.streamlit.app/wanderwise" target="_blank" rel="noopener">Try it live</a><a class="btn" href="https://github.com/ShreyaSairam/portfolio/tree/main/wanderwise" target="_blank" rel="noopener">Code</a></div>
+
+            <div class="tags"><span class="tag">scikit-learn</span><span class="tag">Gemini API</span><span class="tag">Open-Meteo</span><span class="tag">SQLite</span></div>
+          </div>
+        </article>
+
+        <article class="proj">
+          <div class="media"><video src="media/genetics.mp4" poster="media/genetics.jpg" preload="none" playsinline muted aria-label="Genetic testing tool demo"></video><div class="play" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="25" fill="rgba(255,255,255,.92)"/><path d="M21 16l16 10-16 10z" fill="#1E2761"/></svg></div></div>
+          <div class="proj-body">
+            <span class="kind">Health informatics</span>
+            <h3>Genetic Testing Decision Support</h3>
+            <p>Helps a GP choose the right genetic test. Enter the patient's symptoms and get ranked conditions, the genes behind them, a confidence level and one recommended test for the case.</p>
+            <p class="result">Rare symptoms count for more than common ones. Built on real Human Phenotype Ontology data.</p>
+            <div class="btns"><a class="btn primary" href="https://shreyasairam-projects.streamlit.app/genomics" target="_blank" rel="noopener">Try it live</a><a class="btn" href="https://github.com/ShreyaSairam/portfolio/tree/main/genomics_dsst" target="_blank" rel="noopener">Code</a></div>
+
+            <div class="tags"><span class="tag">HPO</span><span class="tag">pandas</span><span class="tag">NetworkX</span><span class="tag">SQLite</span></div>
+          </div>
+        </article>
+
+        <article class="proj">
+          <div class="media"><img src="out-of-phase/media/syd-night.jpg" alt="City at night" style="object-position:center 40%"></div>
+          <div class="proj-body">
+            <span class="kind">Coming next</span>
+            <h3>Finance and risk analytics</h3>
+            <p>New projects on finance, risk and fraud detection will be added here.</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <h3>Shreya Sairam</h3>
+      <p>Optimisation Engineer Intern at Exergenics. Master of Information Systems, University of Melbourne (WAM 80.75).</p>
+    </div>
+    <p>The five demo projects are working rebuilds of my earlier university and personal projects, made on open datasets. All code is at github.com/ShreyaSairam/portfolio.</p>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.proj video').forEach(function(v){
+  var card=v.closest('.proj');
+  v.addEventListener('click',function(){
+    if(v.paused){
+      document.querySelectorAll('.proj video').forEach(function(o){ if(o!==v && !o.paused){ o.pause(); } });
+      v.controls=true; v.play();
+    } else { v.pause(); }
+  });
+  v.addEventListener('play',function(){card.classList.add('playing');});
+  v.addEventListener('pause',function(){card.classList.remove('playing');});
+});
+</script>
+
+</body>
+</html>
