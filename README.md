@@ -7,7 +7,7 @@ AI, data analytics and energy projects, each with a demo.
 | Project | What it is | Demo |
 |---|---|---|
 | Out of Phase | Do batteries paid by market price help or hurt the local grid? Real data from Sydney and Delhi. | [Live demo](out-of-phase/index.html) |
-| Quiet Exits | Check a bank customer: drag their balance, income and cash withdrawals, and two live models give the chance their money leaves in 3 months, the likely reason, and the right response. 1.06M real transactions. | [Try it](quiet-exits/index.html) · [Code](quiet-exits/code) |
+| Churn Prediction: From Employees to Bank Customers | Who is about to leave, why, and what to do. Employees: five models compared on IBM's HR data (rebuild of Melbourne coursework). Bank customers: two live models on 1.06M real transactions give the chance their money leaves in 3 months and the likely reason. | [Employees](quiet-exits/employees.html) · [Bank customers](quiet-exits/index.html) · [Code](quiet-exits/code) |
 | Lumen | Team project, FEIT Hackathon 2026 (SMEC Spot Prize, Top 5). Privacy safe pedestrian counting and shade aware routing for Cremorne. | [Live prototype](https://lumen.yuanhaofeng.com/) |
 | Facial Recognition Attendance | Face recognition check-in with present, late and absent tracking. | [Live](https://shreyasairam-projects.streamlit.app/attendance) |
 | SignSpeak | Real time ASL letter recognition from a webcam, 95.2% test accuracy. | [Live](https://shreyasairam-projects.streamlit.app/signspeak) |

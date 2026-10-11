@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Quiet Exits: check whether a bank customer's money will leave in the next 3 months, why, and what to do. Two models trained on real transactions, running live in the browser.">
-<title>Quiet Exits</title>
+<meta name="description" content="Check whether a bank customer's money will leave in the next 3 months, why, and what to do. Two models trained on real transactions, live in the browser.">
+<title>Churn Prediction: Bank customers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -27,7 +27,10 @@ header{display:flex;align-items:center;gap:14px;padding-block:16px;flex-wrap:wra
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem}
 .mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
 .tagline{color:var(--muted);font-weight:600}
-header a{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+header .home{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+.switch{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:2px}
+.switch a{text-decoration:none;color:var(--muted);font-weight:700;font-size:.88rem;padding:7px 14px;border-radius:9px}
+.switch a.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,33,61,.12)}
 h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-spacing:-.02em}
 .lede{margin:0 0 18px;color:var(--muted)}
 .layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
@@ -84,9 +87,9 @@ footer a{color:var(--ink);font-weight:600}
 
 <div class="wrap">
   <header>
-    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 18h16"/><path d="M7 14V9M12 14V6M17 14v-3"/></svg></span>Quiet Exits</div>
-    <span class="tagline">Check a customer</span>
-    <a href="../">Portfolio</a>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 18h16"/><path d="M7 14V9M12 14V6M17 14v-3"/></svg></span>Churn Prediction</div>
+    <nav class="switch" aria-label="Project half"><a href="employees.html">Employees</a><a href="index.html" class="on">Bank customers</a></nav>
+    <a class="home" href="../">Portfolio</a>
   </header>
 
   <h1>Will this customer's money leave, and why?</h1>

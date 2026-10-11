@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Will this employee leave? Five churn models compared on the open IBM HR dataset, with a live, explainable model in the browser.">
+<title>Churn Prediction: Employees</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: same working-tool frame as the bank half. Controls left, live answer right, model comparison below. Light by design. */
+:root{
+  --paper:#F7F7F4; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --line:#E5E3DC; --soft:#F0EFEA;
+  --low:#2E8B6E; --mid:#C99A1E; --high:#C8462F; --acc:#5B6CD9;
+  --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:22px;padding-block:0 40px}
+header{display:flex;align-items:center;gap:14px;padding-block:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.switch{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:2px}
+.switch a{text-decoration:none;color:var(--muted);font-weight:700;font-size:.88rem;padding:7px 14px;border-radius:9px}
+.switch a.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,33,61,.12)}
+header .home{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-spacing:-.02em}
+.lede{margin:0 0 18px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:14px;min-width:0}
+.out{position:sticky;top:14px}
+.lbl{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-weight:700;font-size:.84rem}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+.ctl{display:grid;gap:4px}
+.ctl .h{display:flex;justify-content:space-between;font-size:.88rem;font-weight:600}
+.ctl .h b{font-family:var(--mono);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.dots{display:flex;gap:4px}
+.dots button{flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 0;font-weight:700;font-size:.8rem;color:var(--muted)}
+.dots button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tg{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;font-weight:600;font-size:.88rem}
+.sw{width:36px;height:20px;border-radius:10px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .2s}
+.tg[aria-pressed="true"] .sw{background:var(--ink)}.tg[aria-pressed="true"] .sw::after{left:19px}
+select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;font-weight:600;font-size:.88rem;width:100%}
+.big{font-size:3.4rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.level{display:inline-block;font-weight:800;font-size:.82rem;border-radius:999px;padding:3px 10px;color:#fff}
+.meter{height:12px;border-radius:6px;background:var(--soft);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:6px;transition:width .35s,background .35s}
+.why{display:grid;gap:6px}
+.why div{display:flex;justify-content:space-between;gap:10px;border-radius:12px;background:var(--soft);padding:9px 12px;font-size:.88rem;font-weight:600}
+.why b{font-family:var(--mono);font-weight:500}
+.resp{border-radius:16px;padding:14px;display:grid;gap:4px;background:#E9ECFB}
+.resp b{font-size:1.02rem}
+.resp span{font-size:.88rem}
+.real{border-top:1px dashed var(--line);padding-top:12px}
+.note{font-size:.78rem;color:var(--muted);margin:0}
+.below{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:18px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+td.r,th.r{text-align:right;font-family:var(--mono)}
+tr.best td{font-weight:800}
+.segs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.seg{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:4px}
+.seg b{font-size:1.4rem;font-weight:800}
+.seg span{font-size:.82rem;color:var(--muted)}
+footer{margin-top:22px;font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:14px}
+footer a{color:var(--ink);font-weight:600}
+@media (max-width:900px){.layout,.below{grid-template-columns:minmax(0,1fr)}.out{position:static}}
+@media (max-width:560px){.wrap{padding-inline:16px}.controls{grid-template-columns:minmax(0,1fr)}.big{font-size:2.8rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 18h16"/><path d="M7 14V9M12 14V6M17 14v-3"/></svg></span>Churn Prediction</div>
+    <nav class="switch" aria-label="Project half"><a href="employees.html" class="on">Employees</a><a href="index.html">Bank customers</a></nav>
+    <a class="home" href="../">Portfolio</a>
+  </header>
+
+  <h1>Will this employee leave?</h1>
+  <p class="lede">Change their situation and the model answers live. Built on 1,470 employees in the open IBM HR attrition dataset.</p>
+
+  <div class="layout">
+    <div class="card">
+      <div class="row"><span class="lbl">Start from a real employee</span></div>
+      <div class="row" id="presets"></div>
+      <div class="controls" id="controls"></div>
+    </div>
+    <div class="card out" aria-live="polite">
+      <div style="display:grid;gap:6px">
+        <span class="lbl">Chance they leave</span>
+        <div class="row" style="align-items:baseline;gap:12px"><span class="big num" id="p"></span><span class="level" id="lvl"></span></div>
+        <div class="meter"><i id="meter"></i></div>
+        <span class="note" id="vs"></span>
+      </div>
+      <div><div class="lbl" style="margin-bottom:8px">What's driving it</div><div class="why" id="why"></div></div>
+      <div class="resp" id="resp"></div>
+      <div class="real" id="real"></div>
+    </div>
+  </div>
+
+  <div class="below">
+    <div class="card">
+      <div class="lbl">Five models compared · test set of <span id="nt"></span> employees</div>
+      <table id="models"></table>
+      <p class="note">AUC: how well it ranks leavers above stayers (0.5 is guessing, 1 is perfect). Top 20%: share of leavers caught by checking the 20% it flags.</p>
+    </div>
+    <div class="card">
+      <div class="lbl">Who leaves · four groups found by clustering</div>
+      <div class="segs" id="segs"></div>
+    </div>
+  </div>
+
+  <footer><span>Rebuild of my business analytics coursework (University of Melbourne), done in SPSS there and in Python here, on IBM's open, fictional HR dataset.</span><a href="index.html">Bank customers</a><a href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></footer>
+</div>
+
+<script>
+const H = {"results": [{"model": "Clustering (k-means)", "auc": null, "top20": null, "note": "Finds 4 groups; leaving rates range from 7% to 28%"}, {"model": "Logistic regression", "auc": 0.852, "top20": 0.627}, {"model": "Decision tree", "auc": 0.749, "top20": 0.559}, {"model": "Random forest", "auc": 0.83, "top20": 0.593}, {"model": "Neural network", "auc": 0.848, "top20": 0.576}], "segs": [{"n": 240, "rate": 0.275, "traits": ["Lower pay", "Lower job level"], "overtime": 0.3, "age": 35, "pay": 4918}, {"n": 322, "rate": 0.183, "traits": ["Lower experience", "Lower years at company"], "overtime": 0.31, "age": 35, "pay": 6205}, {"n": 619, "rate": 0.149, "traits": ["Lower job level", "Lower pay"], "overtime": 0.27, "age": 35, "pay": 4178}, {"n": 289, "rate": 0.069, "traits": ["Higher experience", "Higher pay"], "overtime": 0.27, "age": 45, "pay": 13130}], "live": {"cols": ["Age", "MonthlyIncome", "DistanceFromHome", "JobSatisfaction", "EnvironmentSatisfaction", "WorkLifeBalance", "JobInvolvement", "RelationshipSatisfaction", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager", "TotalWorkingYears", "NumCompaniesWorked", "JobLevel", "StockOptionLevel", "TrainingTimesLastYear", "PercentSalaryHike", "Education", "OverTime_Yes", "BusinessTravel_Travel_Frequently", "BusinessTravel_Travel_Rarely", "MaritalStatus_Married", "MaritalStatus_Single", "Department_Research & Development", "Department_Sales"], "mean": [36.774955, 6373.103448, 9.073503, 2.719601, 2.724138, 2.750454, 2.719601, 2.724138, 6.930127, 4.215064, 2.127042, 4.07441, 11.158802, 2.599819, 2.039927, 0.823956, 2.805808, 15.155172, 2.910163, 0.275862, 0.190563, 0.712341, 0.451906, 0.310345, 0.65245, 0.302178], "std": [9.155056, 4630.086518, 8.031983, 1.096255, 1.082838, 0.711823, 0.71942, 1.08535, 6.00496, 3.54182, 3.170333, 3.493564, 7.760784, 2.418644, 1.090398, 0.866731, 1.31045, 3.657584, 1.033954, 0.446948, 0.392745, 0.452671, 0.497682, 0.462635, 0.476192, 0.459202], "coef": [-0.177337, -0.616797, 0.276015, -0.339185, -0.36233, -0.168976, -0.289457, -0.20547, 0.788702, -0.540076, 0.433109, -0.463274, -0.182376, 0.365517, -0.069404, -0.091273, -0.182703, -0.062149, -0.030446, 0.746417, 0.615046, 0.423406, 0.120772, 0.467663, -0.093486, 0.265483], "intercept": -0.7224884583678832, "intercept_cal": -2.345675292130982}, "presets": [{"name": "Settled senior", "left": false, "p": 0.0476, "role": "Healthcare Representative", "dept": "Research & Development", "raw": {"Age": 34.0, "MonthlyIncome": 8621.0, "DistanceFromHome": 9.0, "JobSatisfaction": 2.0, "EnvironmentSatisfaction": 4.0, "WorkLifeBalance": 4.0, "JobInvolvement": 2.0, "RelationshipSatisfaction": 2.0, "YearsAtCompany": 8.0, "YearsInCurrentRole": 7.0, "YearsSinceLastPromotion": 7.0, "YearsWithCurrManager": 7.0, "TotalWorkingYears": 9.0, "NumCompaniesWorked": 1.0, "JobLevel": 3.0, "StockOptionLevel": 0.0, "TrainingTimesLastYear": 3.0, "PercentSalaryHike": 14.0, "Education": 3.0, "OverTime": "No", "BusinessTravel": "Travel_Rarely", "MaritalStatus": "Single", "Department": "Research & Development"}}, {"name": "Overworked junior", "left": true, "p": 0.8042, "role": "Research Scientist", "dept": "Research & Development", "raw": {"Age": 26.0, "MonthlyIncome": 2042.0, "DistanceFromHome": 2.0, "JobSatisfaction": 1.0, "EnvironmentSatisfaction": 1.0, "WorkLifeBalance": 3.0, "JobInvolvement": 3.0, "RelationshipSatisfaction": 2.0, "YearsAtCompany": 3.0, "YearsInCurrentRole": 2.0, "YearsSinceLastPromotion": 1.0, "YearsWithCurrManager": 2.0, "TotalWorkingYears": 6.0, "NumCompaniesWorked": 6.0, "JobLevel": 1.0, "StockOptionLevel": 1.0, "TrainingTimesLastYear": 2.0, "PercentSalaryHike": 14.0, "Education": 3.0, "OverTime": "Yes", "BusinessTravel": "Travel_Frequently", "MaritalStatus": "Married", "Department": "Research & Development"}}, {"name": "Stuck without promotion", "left": false, "p": 0.3413, "role": "Sales Executive", "dept": "Sales", "raw": {"Age": 39.0, "MonthlyIncome": 13341.0, "DistanceFromHome": 15.0, "JobSatisfaction": 1.0, "EnvironmentSatisfaction": 2.0, "WorkLifeBalance": 3.0, "JobInvolvement": 3.0, "RelationshipSatisfaction": 1.0, "YearsAtCompany": 20.0, "YearsInCurrentRole": 8.0, "YearsSinceLastPromotion": 11.0, "YearsWithCurrManager": 10.0, "TotalWorkingYears": 21.0, "NumCompaniesWorked": 0.0, "JobLevel": 4.0, "StockOptionLevel": 0.0, "TrainingTimesLastYear": 3.0, "PercentSalaryHike": 12.0, "Education": 4.0, "OverTime": "No", "BusinessTravel": "Travel_Rarely", "MaritalStatus": "Single", "Department": "Sales"}}, {"name": "Long commute", "left": true, "p": 0.6873, "role": "Laboratory Technician", "dept": "Research & Development", "raw": {"Age": 32.0, "MonthlyIncome": 2795.0, "DistanceFromHome": 25.0, "JobSatisfaction": 4.0, "EnvironmentSatisfaction": 1.0, "WorkLifeBalance": 1.0, "JobInvolvement": 3.0, "RelationshipSatisfaction": 3.0, "YearsAtCompany": 1.0, "YearsInCurrentRole": 0.0, "YearsSinceLastPromotion": 0.0, "YearsWithCurrManager": 1.0, "TotalWorkingYears": 1.0, "NumCompaniesWorked": 1.0, "JobLevel": 1.0, "StockOptionLevel": 0.0, "TrainingTimesLastYear": 2.0, "PercentSalaryHike": 24.0, "Education": 4.0, "OverTime": "Yes", "BusinessTravel": "Travel_Rarely", "MaritalStatus": "Single", "Department": "Research & Development"}}], "num": ["Age", "MonthlyIncome", "DistanceFromHome", "JobSatisfaction", "EnvironmentSatisfaction", "WorkLifeBalance", "JobInvolvement", "RelationshipSatisfaction", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager", "TotalWorkingYears", "NumCompaniesWorked", "JobLevel", "StockOptionLevel", "TrainingTimesLastYear", "PercentSalaryHike", "Education"], "cat": ["OverTime", "BusinessTravel", "MaritalStatus", "Department"], "base": 0.1612, "n": 1470, "n_test": 368, "ranges": {"Age": [18.0, 60.0], "MonthlyIncome": [1009.0, 19999.0], "DistanceFromHome": [1.0, 29.0], "JobSatisfaction": [1.0, 4.0], "EnvironmentSatisfaction": [1.0, 4.0], "WorkLifeBalance": [1.0, 4.0], "JobInvolvement": [1.0, 4.0], "RelationshipSatisfaction": [1.0, 4.0], "YearsAtCompany": [0.0, 40.0], "YearsInCurrentRole": [0.0, 18.0], "YearsSinceLastPromotion": [0.0, 15.0], "YearsWithCurrManager": [0.0, 17.0], "TotalWorkingYears": [0.0, 40.0], "NumCompaniesWorked": [0.0, 9.0], "JobLevel": [1.0, 5.0], "StockOptionLevel": [0.0, 3.0], "TrainingTimesLastYear": [0.0, 6.0], "PercentSalaryHike": [11.0, 25.0], "Education": [1.0, 5.0]}, "levels": {"OverTime": ["No", "Yes"], "BusinessTravel": ["Non-Travel", "Travel_Frequently", "Travel_Rarely"], "MaritalStatus": ["Divorced", "Married", "Single"], "Department": ["Human Resources", "Research & Development", "Sales"]}};
+const $ = s => document.querySelector(s);
+const pct = v => Math.round(v*100)+"%";
+const L = H.live;
+const CTRL = [
+  ["OverTime","Works overtime","toggle"],
+  ["MonthlyIncome","Monthly income ($)","range",1000,20000,250],
+  ["JobSatisfaction","Job satisfaction","dots"],
+  ["EnvironmentSatisfaction","Workplace satisfaction","dots"],
+  ["WorkLifeBalance","Work-life balance","dots"],
+  ["YearsSinceLastPromotion","Years since last promotion","range",0,15,1],
+  ["YearsAtCompany","Years at the company","range",0,40,1],
+  ["DistanceFromHome","Commute (km)","range",1,29,1],
+  ["Age","Age","range",18,60,1],
+  ["StockOptionLevel","Stock options (0 to 3)","range",0,3,1],
+  ["BusinessTravel","Business travel","select"],
+  ["MaritalStatus","Marital status","select"]];
+const LABEL = {OverTime_Yes:"Works overtime", MonthlyIncome:"Monthly income", JobSatisfaction:"Job satisfaction", EnvironmentSatisfaction:"Workplace satisfaction",
+  WorkLifeBalance:"Work-life balance", YearsSinceLastPromotion:"Years since promotion", YearsAtCompany:"Years at company", DistanceFromHome:"Long commute",
+  Age:"Age", StockOptionLevel:"Stock options", "BusinessTravel_Travel_Frequently":"Travels frequently", "BusinessTravel_Travel_Rarely":"Travels rarely",
+  MaritalStatus_Single:"Single", MaritalStatus_Married:"Married", JobLevel:"Job level", TotalWorkingYears:"Total experience", NumCompaniesWorked:"Many past employers",
+  JobInvolvement:"Job involvement", RelationshipSatisfaction:"Relationships at work", YearsWithCurrManager:"Years with manager", YearsInCurrentRole:"Years in role",
+  "Department_Research & Development":"R&D department", Department_Sales:"Sales department", TrainingTimesLastYear:"Training last year", PercentSalaryHike:"Salary rise", Education:"Education"};
+const ACTION = {OverTime_Yes:["Review the workload","Overtime is the strongest single driver. Rebalance hours or add support."],
+  MonthlyIncome:["Review pay","Pay sits low for this profile. Check it against the market."],
+  JobSatisfaction:["Have a career conversation","Low job satisfaction. Ask what would make the work more meaningful."],
+  EnvironmentSatisfaction:["Fix the workplace","Low workplace satisfaction. Look at team, tools and conditions."],
+  WorkLifeBalance:["Protect their time","Poor work-life balance. Flexible hours can help."],
+  YearsSinceLastPromotion:["Map a next step","Long without promotion. Agree a clear path forward."],
+  DistanceFromHome:["Offer hybrid days","A long commute adds up. Remote days can help."],
+  StockOptionLevel:["Add a reason to stay","Few or no stock options. Long-term rewards help retention."],
+  "BusinessTravel_Travel_Frequently":["Reduce travel","Frequent travel wears people down."],
+  MaritalStatus_Single:["Build connection","Single employees leave more often here. Mentoring and team ties help."],
+  YearsAtCompany:["Support new starters","Early tenure is the riskiest time. A strong onboarding buddy helps."],
+  Age:["Support early careers","Younger employees move more often. Growth and learning keep them."]};
+let cur, preset = 1, edited = false;
+
+const DIR = {MonthlyIncome:["Low pay","High pay"], YearsSinceLastPromotion:["Recently promoted","Long since promotion"], YearsAtCompany:["New to the company","Long tenure"],
+  DistanceFromHome:["Short commute","Long commute"], Age:["Younger","Older"], NumCompaniesWorked:["Few past employers","Many past employers"], TotalWorkingYears:["Little experience","Lots of experience"],
+  JobLevel:["Junior level","Senior level"], StockOptionLevel:["Few stock options","More stock options"], YearsWithCurrManager:["New manager","Long with manager"], YearsInCurrentRole:["New in role","Long in role"]};
+function label(c){ if(DIR[c]){ const i=L.cols.indexOf(c); return DIR[c][cur[c] < L.mean[i] ? 0 : 1]; } const i=L.cols.indexOf(c);
+  if(!c.includes("_") && ["JobSatisfaction","EnvironmentSatisfaction","WorkLifeBalance","JobInvolvement","RelationshipSatisfaction"].includes(c)) return (cur[c] < L.mean[i] ? "Low " : "High ") + LABEL[c].toLowerCase(); return LABEL[c]||c; }
+function vec(r){ return L.cols.map(c=>{ if(c in r) return +r[c]; const k=c.indexOf("_"); const base=c.slice(0,k), lev=c.slice(k+1); return r[base]===lev?1:0; }); }
+function score(r){ const x = vec(r); let s = L.intercept_cal; const contrib = []; x.forEach((v,i)=>{ const z=(v-L.mean[i])/L.std[i], c=L.coef[i]*z; s+=c; contrib.push([L.cols[i], c]); }); return {p:1/(1+Math.exp(-s)), contrib}; }
+
+$("#presets").innerHTML = H.presets.map((p,i)=>`<button class="chip" data-i="${i}">${p.name}</button>`).join("");
+$("#presets").addEventListener("click", e=>{ const b=e.target.closest(".chip"); if(b) load(+b.dataset.i); });
+function load(i){ preset=i; edited=false; cur = JSON.parse(JSON.stringify(H.presets[i].raw)); render(); }
+
+function controls(){
+  $("#controls").innerHTML = CTRL.map(([k,l,t,mn,mx,st])=>{
+    if(t==="toggle") return `<button class="tg" data-k="${k}" aria-pressed="${cur[k]==="Yes"}">${l}<span class="sw"></span></button>`;
+    if(t==="dots") return `<div class="ctl"><div class="h"><span>${l}</span><b>${["","Low","Medium","High","Very high"][cur[k]]}</b></div><div class="dots" data-k="${k}">${[1,2,3,4].map(v=>`<button data-v="${v}" aria-pressed="${cur[k]==v}">${v}</button>`).join("")}</div></div>`;
+    if(t==="select") return `<div class="ctl"><div class="h"><span>${l}</span></div><select data-k="${k}">${H.levels[k].map(v=>`<option ${cur[k]===v?"selected":""} value="${v}">${v.replace("Travel_","").replace("Non-Travel","None").replace("_"," ")}</option>`).join("")}</select></div>`;
+    return `<div class="ctl"><div class="h"><label for="r-${k}">${l}</label><b id="v-${k}">${k==="MonthlyIncome"?"$"+Math.round(cur[k]).toLocaleString("en-US"):cur[k]}</b></div><input type="range" id="r-${k}" data-k="${k}" min="${mn}" max="${mx}" step="${st}" value="${cur[k]}"></div>`;
+  }).join("");
+}
+$("#controls").addEventListener("click", e=>{
+  const tg=e.target.closest(".tg"); if(tg){ cur[tg.dataset.k] = cur[tg.dataset.k]==="Yes"?"No":"Yes"; edited=true; render(); return; }
+  const d=e.target.closest(".dots button"); if(d){ cur[d.parentElement.dataset.k]=+d.dataset.v; edited=true; render(); }
+});
+$("#controls").addEventListener("input", e=>{ const k=e.target.dataset.k; if(!k) return; cur[k] = e.target.tagName==="SELECT" ? e.target.value : +e.target.value; edited=true;
+  if(e.target.tagName!=="SELECT"){ $("#v-"+k).textContent = k==="MonthlyIncome"?"$"+Math.round(cur[k]).toLocaleString("en-US"):cur[k]; renderOut(); } else render(); });
+
+function renderOut(){
+  const {p, contrib} = score(cur);
+  const lvl = p < .15 ? ["Low","var(--low)"] : p < .35 ? ["Watch","var(--mid)"] : ["High","var(--high)"];
+  $("#p").textContent = pct(p); $("#lvl").textContent = lvl[0]; $("#lvl").style.background = lvl[1];
+  $("#meter").style.width = Math.max(2,p*100)+"%"; $("#meter").style.background = lvl[1];
+  $("#vs").textContent = `Average employee: ${pct(H.base)}.`;
+  const ups = contrib.filter(c=>c[1]>0.05).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  $("#why").innerHTML = ups.length ? ups.map(([c,v])=>`<div><span>${label(c)}</span><b style="color:var(--high)">+${(v).toFixed(2)}</b></div>`).join("") : `<p class="note">Nothing stands out. This profile looks settled.</p>`;
+  const WANT = {YearsAtCompany:0, Age:0, MonthlyIncome:0, StockOptionLevel:0, YearsSinceLastPromotion:1, DistanceFromHome:1};
+  const fits = c => ACTION[c] && (!(c in WANT) || (cur[c] < L.mean[L.cols.indexOf(c)] ? 0 : 1) === WANT[c]);
+  const top = ups.find(([c])=>fits(c));
+  const a = p < .15 ? ["Keep doing what works","Low risk. A regular check-in is enough."] : top ? ACTION[top[0]] : ["Check in","Ask how things are going and listen."];
+  $("#resp").innerHTML = `<span class="lbl">Suggested action</span><b>${a[0]}</b><span>${a[1]}</span>`;
+  const pr = H.presets[preset];
+  $("#real").innerHTML = edited ? `<p class="note">Edited, so there's no real outcome to compare. <button class="chip" id="back">Back to the real employee</button></p>` : `<p class="note"><b style="color:${pr.left?"var(--high)":"var(--low)"}">${pr.left?"In the data, this employee left.":"In the data, this employee stayed."}</b> ${pr.role}, ${pr.dept}.</p>`;
+  $("#back")?.addEventListener("click", ()=>load(preset));
+}
+function render(){
+  document.querySelectorAll("#presets .chip").forEach(c=>c.setAttribute("aria-pressed", +c.dataset.i===preset && !edited));
+  controls(); renderOut();
+}
+// models + segments
+$("#nt").textContent = H.n_test;
+const best = H.results.filter(r=>r.auc).sort((a,b)=>b.auc-a.auc)[0].model;
+$("#models").innerHTML = `<tr><th>Model</th><th class="r">AUC</th><th class="r">Top 20%</th></tr>` + H.results.map(r=>`<tr class="${r.model===best?"best":""}"><td>${r.model}${r.model===best?" · used live":""}</td><td class="r">${r.auc!=null?r.auc.toFixed(2):"–"}</td><td class="r">${r.top20!=null?pct(r.top20):"–"}</td></tr>`).join("") + `<tr><td colspan="3" class="note" style="border:0">${H.results[0].note}.</td></tr>`;
+$("#segs").innerHTML = H.segs.map(s=>`<div class="seg"><b style="color:${s.rate>.2?"var(--high)":s.rate>.12?"var(--mid)":"var(--low)"}">${pct(s.rate)}</b><span>leave · ${s.n} employees</span><span style="color:var(--ink);font-weight:600">${s.traits.join(", ")}</span><span>Avg age ${s.age} · $${s.pay.toLocaleString("en-US")}/month</span></div>`).join("");
+load(1);
+</script>
+
+</body>
+</html>
