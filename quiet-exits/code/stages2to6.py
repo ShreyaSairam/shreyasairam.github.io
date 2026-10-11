@@ -210,7 +210,7 @@ def reason_text(f, val, c):
         "overdraft_6": f"{int(val)} overdraft charges in 6 months",
         "pension_6": "Receives a pension" if val else "No pension income",
         "tenure_m": f"Customer for {int(val)} months",
-        "log_balance": f"Usual balance around {10**val:,.0f} CZK",
+        "log_balance": f"Usual balance around {10**min(val, 9):,.0f} CZK",
         "has_loan": "Has a loan with us" if val else "No loan with us",
         "loan_in_trouble": "Loan in arrears" if val else "Loan in good standing",
         "has_card": "Holds a card" if val else "No card",
@@ -282,3 +282,19 @@ print("drop_frac", drop_frac, "score_psi", score_psi)
 print("budget", budget[:5])
 print("fair", json.dumps(fairness, indent=0)[:800])
 print("top imp", importance[:8])
+
+# ---------------------------------------------------------------- export for the RM game
+rows = []
+for i in range(len(today)):
+    r = today.iloc[i]; c = tc[i, :-1]
+    idx = np.argsort(-c)[:3]
+    reasons = [reason_text(FEATURES[j], float(r[FEATURES[j]]), float(c[j])) for j in idx if c[j] > 0]
+    sig, act = action_for(reasons)
+    rows.append(dict(id=int(r.account_id), p=float(r.p), at_risk=float(r.at_risk), usual=float(r.past6), balance=float(r.balance),
+                     drift=None if np.isnan(r.fut3) else int(r.drift), lost=float(r.lost_balance) if not np.isnan(r.fut3) else 0.0,
+                     next3=None if np.isnan(r.fut3) else float(r.fut3), signal=sig, age=int(r.age), gender=r.gender,
+                     region=r.region, tenure=int(r.tenure_m), has_loan=int(r.has_loan), loan_trouble=int(r.loan_in_trouble),
+                     pension=int(r.pension_6), overdraft=int(r.overdraft_6), income_change=float(r.income_change),
+                     regular_income=float(r.regular_income), reasons=reasons, x=[float(r[f]) for f in FEATURES]))
+(OUT / "today_all.json").write_text(json.dumps(rows))
+print("today rows", len(rows))

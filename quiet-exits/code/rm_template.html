@@ -1,0 +1,371 @@
+<title>Quiet Exits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an RM's desk. A row of customer cards is the board; one action bar; everything else hides in a drawer. */
+:root{
+  --bg:#eef2f4; --surface:#ffffff; --sunk:#e3e9ed; --ink:#122029; --muted:#5a6873; --line:#d0d8de;
+  --accent:#0b6b73; --accent-soft:#d5ebec; --risk:#b4401a; --risk-soft:#f7e2d9; --ok:#2c7a4e; --ok-soft:#dcefe3; --warn:#9a6a10; --warn-soft:#f5ebd3;
+  --display:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1419; --surface:#152028; --sunk:#1c2a33; --ink:#e4ecf1; --muted:#9aa9b4; --line:#2b3b46;
+  --accent:#4fbfb8; --accent-soft:#173a3d; --risk:#f08a64; --risk-soft:#3e2319; --ok:#6cc893; --ok-soft:#173324; --warn:#e2b34f; --warn-soft:#3a2f17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1419; --surface:#152028; --sunk:#1c2a33; --ink:#e4ecf1; --muted:#9aa9b4; --line:#2b3b46;
+  --accent:#4fbfb8; --accent-soft:#173a3d; --risk:#f08a64; --risk-soft:#3e2319; --ok:#6cc893; --ok-soft:#173324; --warn:#e2b34f; --warn-soft:#3a2f17; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1160px;margin:0 auto;padding-inline:20px;padding-block:18px 56px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* top bar */
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font-family:var(--display);font-weight:800;font-size:1.3rem}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:4px 12px;border-radius:999px;font-size:.82rem}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 18px;font-weight:600;font-size:.92rem}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.small{padding:6px 12px;font-size:.82rem;border-radius:8px}
+
+/* step header */
+.stephead{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+.stephead h1{font-size:clamp(1.5rem,3.4vw,2.2rem);font-weight:800;line-height:1.1;max-width:24ch}
+.steps{display:flex;gap:6px}
+.steps span{width:28px;height:4px;border-radius:2px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.cardc{position:relative;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 12px 10px;display:grid;gap:6px;min-width:0;transition:border-color .2s,transform .15s}
+.cardc:hover{transform:translateY(-2px)}
+.cardc .nm{font-family:var(--display);font-weight:700;font-size:1.05rem}
+.cardc .meta{font-size:.76rem;color:var(--muted)}
+.cardc svg{width:100%;height:46px;display:block;overflow:visible}
+.cardc .bal{font-family:var(--mono);font-size:.8rem}
+.cardc.picked{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cardc.open{border-color:var(--ink)}
+.badge{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:999px}
+.badge.call{background:var(--accent);color:var(--bg)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;min-height:20px}
+.tag{font-family:var(--mono);font-size:.64rem;font-weight:600;padding:2px 7px;border-radius:999px}
+.tag.drift{background:var(--risk-soft);color:var(--risk)}
+.tag.fine{background:var(--ok-soft);color:var(--ok)}
+.tag.model{background:var(--sunk);color:var(--ink);border:1px solid var(--line)}
+.cardc.drifted{border-color:var(--risk)}
+
+/* desk area below board */
+.desk{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:12px;min-width:0}
+.facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.facts li{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:center;font-size:.95rem}
+.ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--sunk);font-family:var(--mono);font-size:.8rem;font-weight:600}
+.ico.bad{background:var(--risk-soft);color:var(--risk)} .ico.good{background:var(--ok-soft);color:var(--ok)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.hint{font-size:.86rem;color:var(--muted)}
+.score{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.score div{display:grid;gap:2px}
+.score b{font-family:var(--display);font-size:2rem;line-height:1.1}
+.score span{font-size:.82rem;color:var(--muted)}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.choice{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;text-align:left;display:grid;gap:2px}
+.choice b{font-family:var(--display)}
+.choice span{font-size:.78rem;color:var(--muted)}
+.choice[aria-pressed="true"]{border-color:var(--ink)}
+.fb{border-radius:10px;padding:10px 12px;font-size:.9rem;font-weight:500}
+.fb.good{background:var(--ok-soft);color:var(--ok)} .fb.warn{background:var(--warn-soft);color:var(--warn)} .fb.bad{background:var(--risk-soft);color:var(--risk)}
+.opener{background:var(--sunk);border-radius:10px;padding:12px 14px;font-size:.9rem}
+.why{font-size:.84rem;color:var(--muted);display:grid;gap:4px}
+.why summary{cursor:pointer;color:var(--ink);font-weight:500}
+
+/* branch canvas */
+.branch canvas{width:100%;height:auto;display:block;border-radius:10px;background:var(--sunk)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+/* drawer */
+.drawer{position:fixed;inset:0;background:color-mix(in srgb,var(--ink) 40%,transparent);display:flex;justify-content:flex-end;z-index:5}
+.drawer .sheet{width:min(460px,100%);height:100%;background:var(--surface);padding:22px 20px calc(22px + env(safe-area-inset-bottom,0px));overflow-y:auto;display:grid;gap:12px;align-content:start}
+.team{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.team .n{font-family:var(--mono);font-size:.72rem;color:var(--muted);grid-row:span 2;padding-top:3px}
+.team b{font-family:var(--display)}
+.team span{font-size:.86rem;color:var(--muted)}
+.team em{font-style:normal;font-family:var(--mono);color:var(--accent);font-size:.85rem}
+a{color:var(--accent)}
+
+@media (max-width:980px){.board{grid-template-columns:repeat(3,minmax(0,1fr))}.desk{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.wrap{padding-inline:16px}.board{grid-template-columns:repeat(2,minmax(0,1fr))}.choices{grid-template-columns:minmax(0,1fr)}.score b{font-size:1.5rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><b>Quiet Exits</b><span class="eyebrow" id="weeklabel"></span></div>
+    <div class="ctrls">
+      <div class="seg" role="group" aria-label="Country rules"><button id="c-in" aria-pressed="true">India</button><button id="c-uk" aria-pressed="false">UK</button></div>
+      <button class="btn ghost small" id="open-how">How it was built</button>
+    </div>
+  </div>
+
+  <div class="stephead">
+    <div style="display:grid;gap:6px">
+      <div class="eyebrow" id="stepeyebrow"></div>
+      <h1 id="steptitle"></h1>
+    </div>
+    <div class="steps" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="desk" id="desk"></div>
+</div>
+
+<div class="drawer" id="how" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="how-title">
+    <div class="bar"><h2 id="how-title">How it was built</h2><button class="btn ghost small" id="close-how">Close</button></div>
+    <p class="hint">Real transactions from a Czech bank, 1993 to 1998. Names are invented. Six teams, the way any bank works.</p>
+    <div id="teams"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px"><a class="btn small" href="report.html" style="text-decoration:none">Full technical report</a><a class="btn ghost small" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener" style="text-decoration:none">Code</a></div>
+  </div>
+</div>
+
+<script>
+const G = /*__RM__*/null;
+const M = /*__META__*/null;
+const $ = s => document.querySelector(s);
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const k = n => n >= 1e6 ? (n/1e6).toFixed(1)+"M" : Math.round(n/1000)+"k";
+let week = 0, step = 1, picks = new Set(), openId = null, ctx = "in", talkIdx = 0, talks = {}, calls = 300;
+try{ ctx = localStorage.getItem("qe-ctx") || "in"; }catch(e){}
+
+const ICON = {down:["↓","bad"],up:["↑","good"],flat:["=",""],stop:["!","bad"],salary:["+","good"],pension:["P","good"],cash:["¤","bad"],loan:["!","bad"],loanok:["✓","good"],overdraft:["!","bad"],card:["▭",""],since:["★",""]};
+
+function spark(c, showAfter){
+  const pts = showAfter ? c.hist.concat(c.after) : c.hist;
+  const all = c.hist.concat(c.after, [c.usual]);
+  const mx = Math.max(...all)*1.05, mn = Math.min(...all, 0);
+  const n = c.hist.length + c.after.length - 1;
+  const X = i => (i/n)*100, Y = v => 44 - (v-mn)/(mx-mn)*40;
+  const line = arr => arr.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const h = line(c.hist);
+  const a = showAfter ? c.after.map((v,i)=>`${X(c.hist.length+i).toFixed(1)},${Y(v).toFixed(1)}`) : [];
+  const last = c.hist.length-1;
+  return `<svg viewBox="0 0 100 46" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" x2="100" y1="${Y(c.usual)}" y2="${Y(c.usual)}" stroke="var(--line)" stroke-dasharray="2 2" stroke-width="1" vector-effect="non-scaling-stroke"/>
+    <polyline points="${h}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    ${showAfter ? `<polyline points="${X(last)},${Y(c.hist[last])} ${a.join(" ")}" fill="none" stroke="${c.drift?"var(--risk)":"var(--ok)"}" stroke-width="2.2" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>` : ""}
+    <circle cx="${X(last)}" cy="${Y(c.hist[last])}" r="2" fill="var(--accent)"/></svg>`;
+}
+
+const W = () => G.weeks[week];
+const modelPicks = () => [...W()].sort((a,b)=>b.p-a.p).slice(0,3).map(c=>c.id);
+
+function setHead(eb, title){
+  $("#stepeyebrow").textContent = eb; $("#steptitle").textContent = title;
+  document.querySelectorAll(".steps span").forEach((s,i)=>s.classList.toggle("on", i < step));
+  $("#weeklabel").textContent = `Week ${week+1} of ${G.weeks.length} · Sep 1998`;
+}
+
+function renderBoard(){
+  const reveal = step >= 2, mp = modelPicks();
+  $("#board").innerHTML = W().map(c=>{
+    const tags = !reveal ? "" : (c.drift ? `<span class="tag drift">Drifted</span>` : `<span class="tag fine">Stayed</span>`) + (mp.includes(c.id) ? `<span class="tag model">Model pick</span>` : "");
+    return `<button class="cardc ${picks.has(c.id)?"picked":""} ${openId===c.id?"open":""} ${reveal&&c.drift?"drifted":""}" data-id="${c.id}" aria-pressed="${picks.has(c.id)}">
+      ${picks.has(c.id)?'<span class="badge call">CALL</span>':""}
+      <span class="nm">${c.name}</span><span class="meta">${c.age} · ${c.region}</span>
+      ${spark(c, reveal)}
+      <span class="bal num">${k(c.hist[c.hist.length-1])} CZK <span style="color:var(--muted)">/ usual ${k(c.usual)}</span></span>
+      <span class="tags">${tags}</span></button>`;}).join("");
+}
+
+/* ---------------- step 1: pick */
+function renderPickDesk(){
+  const c = W().find(x=>x.id===openId);
+  const pickedTxt = `${picks.size} of 3 picked`;
+  $("#desk").innerHTML = `
+    <div class="panel">${c ? `
+      <div class="bar"><div><h2>${c.name}, ${c.age}</h2><span class="hint">${c.region}</span></div>
+      <button class="btn small ${picks.has(c.id)?"ghost":""}" id="toggle">${picks.has(c.id)?"Remove from calls":"Add to my calls"}</button></div>
+      <ul class="facts">${c.facts.map(([t,txt])=>`<li><span class="ico ${ICON[t]?.[1]||""}">${ICON[t]?.[0]||"•"}</span><span>${txt}</span></li>`).join("")}</ul>`
+      : `<h2>Tap a customer</h2><p class="hint">See what their account says about their life.</p>`}
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Your calls this week</div>
+      <div style="font-family:var(--display);font-size:2.4rem;font-weight:800" class="num">${picks.size}<span style="color:var(--muted);font-size:1.2rem"> / 3</span></div>
+      <button class="btn" id="lock" ${picks.size===3?"":"disabled"}>Lock in and see what happened</button>
+      <span class="hint">${pickedTxt}. Three of them really are about to drift.</span>
+    </div>`;
+  $("#toggle")?.addEventListener("click",()=>{ togglePick(c.id); if(innerWidth<980 && picks.size<3) $("#board").scrollIntoView({behavior:"smooth",block:"start"}); });
+  $("#lock").addEventListener("click",()=>{ step=2; render(); });
+}
+function togglePick(id){
+  if(picks.has(id)) picks.delete(id); else if(picks.size<3) picks.add(id);
+  render();
+}
+
+/* ---------------- step 2: reveal */
+function renderReveal(){
+  const drifters = W().filter(c=>c.drift).map(c=>c.id), mp = modelPicks();
+  const you = [...picks].filter(id=>drifters.includes(id)).length;
+  const model = mp.filter(id=>drifters.includes(id)).length;
+  $("#desk").innerHTML = `
+    <div class="panel">
+      <div class="score">
+        <div><b class="num">${you}/3</b><span>you caught</span></div>
+        <div><b class="num">${model}/3</b><span>the model caught</span></div>
+        <div><b class="num">${k(W().filter(c=>c.drift).reduce((a,c)=>a+Math.max(0,c.usual-c.next3),0))}</b><span>CZK that drifted away</span></div>
+      </div>
+      <p class="hint">Dashed lines show the next 3 months. Nobody called these customers.</p>
+    </div>
+    <div class="panel">
+      <h2>Now make the calls</h2>
+      <p class="hint">Talk to the customers who drifted. Choose how you open the conversation.</p>
+      <button class="btn" id="talk">Start calling</button>
+    </div>`;
+  $("#talk").addEventListener("click",()=>{ step=3; talkIdx=0; openId=W().filter(c=>c.drift)[0].id; render(); });
+}
+
+/* ---------------- step 3: conversation */
+const CHOICES = [["checkin","Check in","How are things going?"],["support","Support","Help with money worries"],["offer","Offer","A better product"]];
+function verdict(c, ch){
+  if(c.stress){
+    if(ch==="support") return ["good","Right call. They're struggling. Lead with help."];
+    if(ch==="offer") return ["bad", ctx==="uk" ? "Selling to someone struggling breaks Consumer Duty. Lead with support." : "Selling to someone struggling is unfair practice. Lead with support."];
+    return ["warn","Kind, but they need practical help. Offer support."];
+  }
+  if(ch==="checkin") return ["good","Right call. Listen first. Find out what changed."];
+  if(ch==="offer") return ["warn","Too fast. You don't know why yet. Check in first."];
+  return ["warn","They're not in trouble. A check-in fits better."];
+}
+function opener(c, ch){
+  const hi = ctx==="uk" ? `Hi ${c.name}, it's your relationship manager.` : `Namaste ${c.name}, this is your relationship manager.`;
+  if(ch==="support") return `${hi} I'm calling to check how things are. If money is tight at the moment, we can look at your repayments together. No pressure at all.`;
+  if(ch==="offer") return `${hi} We have a savings option that may suit you better. Could I take five minutes to walk you through it?`;
+  return `${hi} It's been a while, so I wanted to check in. Has anything changed for you lately? I'd like to make sure your account still works for you.`;
+}
+function renderTalk(){
+  const list = W().filter(c=>c.drift); const c = list[talkIdx]; openId = c.id;
+  const ch = talks[c.id];
+  const v = ch ? verdict(c, ch) : null;
+  $("#desk").innerHTML = `
+    <div class="panel">
+      <div class="bar"><div><div class="eyebrow">Call ${talkIdx+1} of ${list.length}</div><h2>${c.name}, ${c.age}</h2></div>${picks.has(c.id)?'<span class="tag model">On your list</span>':'<span class="tag drift">You missed them</span>'}</div>
+      <ul class="facts">${c.facts.map(([t,txt])=>`<li><span class="ico ${ICON[t]?.[1]||""}">${ICON[t]?.[0]||"•"}</span><span>${txt}</span></li>`).join("")}</ul>
+      <details class="why"><summary>Why the model flagged them</summary>${c.reasons.map(r=>`<span>• ${r}</span>`).join("")}</details>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">How do you open?</div>
+      <div class="choices">${CHOICES.map(([id,t,s])=>`<button class="choice" data-ch="${id}" aria-pressed="${ch===id}"><b>${t}</b><span>${s}</span></button>`).join("")}</div>
+      ${v ? `<div class="fb ${v[0]}">${v[1]}</div><div class="opener">${opener(c, v[0]==="good"?ch:(c.stress?"support":"checkin"))}</div>` : ""}
+      <div class="bar"><span class="hint">${v && v[0]!=="good" ? "Suggested opener shown." : ""}</span><button class="btn" id="next" ${ch?"":"disabled"}>${talkIdx+1<list.length?"Next call":"See your branch"}</button></div>
+    </div>`;
+  document.querySelectorAll(".choice").forEach(b=>b.addEventListener("click",()=>{ talks[c.id]=b.dataset.ch; renderTalk(); renderBoard(); }));
+  $("#next").addEventListener("click",()=>{ if(talkIdx+1<list.length){ talkIdx++; render(); } else { step=4; openId=null; render(); } });
+}
+
+/* ---------------- step 4: branch */
+function renderBranch(){
+  const good = Object.entries(talks).filter(([id,ch])=>{const c=W().find(x=>x.id==id); return c && verdict(c,ch)[0]==="good";}).length;
+  const nTalk = W().filter(c=>c.drift).length;
+  $("#desk").innerHTML = `
+    <div class="panel branch">
+      <div class="bar"><h2>Your whole branch</h2><span class="hint num" id="b-n"></span></div>
+      <canvas id="dots" width="900" height="300" aria-label="Every customer as a dot. Highlighted dots are on the call list; red dots really drifted."></canvas>
+      <label class="hint" for="calls">Calls your team can make</label>
+      <input type="range" id="calls" min="0" max="1000" step="50" value="${calls}">
+      <div class="score">
+        <div><b class="num" id="b-reach"></b><span>drifting customers reached</span></div>
+        <div><b class="num" id="b-money"></b><span>CZK of drifting balance reached</span></div>
+        <div><b class="num" id="b-rand"></b><span id="b-rand-l">reached if you called at random</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Your week</div>
+      <div class="score" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div><b class="num">${[...picks].filter(id=>W().find(c=>c.id===id).drift).length}/3</b><span>drifters you spotted</span></div>
+        <div><b class="num">${good}/${nTalk}</b><span>conversations opened well</span></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${week+1<G.weeks.length?'<button class="btn" id="nextweek">Next week</button>':'<button class="btn" id="restart">Play again</button>'}<button class="btn ghost" id="how2">How it was built</button></div>
+    </div>`;
+  drawDots();
+  $("#calls").addEventListener("input",e=>{calls=+e.target.value; drawDots();});
+  $("#nextweek")?.addEventListener("click",()=>{week++; reset();});
+  $("#restart")?.addEventListener("click",()=>{week=0; reset();});
+  $("#how2").addEventListener("click",openHow);
+}
+function drawDots(){
+  const cv=$("#dots"), g=cv.getContext("2d"), B=G.branch, N=B.drift.length;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const cols=90, rows=Math.ceil(N/cols), cw=cv.width/cols, rh=cv.height/rows, r=Math.min(cw,rh)*0.36;
+  g.clearRect(0,0,cv.width,cv.height);
+  let reach=0, money=0;
+  for(let i=0;i<N;i++){
+    const x=(i%cols+.5)*cw, y=(Math.floor(i/cols)+.5)*rh, on=i<calls, d=B.drift[i];
+    if(on&&d){reach++; money+=B.lost[i];}
+    g.beginPath(); g.arc(x,y,r,0,Math.PI*2);
+    g.fillStyle = d ? css("--risk") : (on ? css("--accent") : css("--line"));
+    g.globalAlpha = on ? 1 : (d ? .35 : .9); g.fill();
+    if(on){g.globalAlpha=1; g.lineWidth=1.2; g.strokeStyle=css("--ink"); g.stroke();}
+  }
+  g.globalAlpha=1;
+  $("#b-n").textContent = `${fmt(N)} customers · ranked by the model`;
+  $("#b-reach").textContent = `${reach}/${B.total_drifters}`;
+  $("#b-money").textContent = k(money);
+  $("#b-rand").textContent = `${Math.round(B.total_drifters*calls/N)} people`;
+}
+
+function reset(){ step=1; picks=new Set(); openId=null; talks={}; talkIdx=0; render(); window.scrollTo({top:0,behavior:"smooth"}); }
+
+function render(){
+  if(step===1) setHead("Step 1 · Your Monday","Who would you call this week?");
+  if(step===2) setHead("Step 2 · Three months later","Here's who really drifted.");
+  if(step===3) setHead("Step 3 · The call","Open the conversation the right way.");
+  if(step===4) setHead("Step 4 · The bigger picture","The model does this for every customer.");
+  renderBoard();
+  ({1:renderPickDesk,2:renderReveal,3:renderTalk,4:renderBranch})[step]();
+}
+
+$("#board").addEventListener("click",e=>{
+  const b=e.target.closest(".cardc"); if(!b) return; const id=+b.dataset.id;
+  if(step===1){ openId=id; render(); if(innerWidth<980) $("#desk").scrollIntoView({behavior:"smooth",block:"start"}); }
+  else if(step===3){ const list=W().filter(c=>c.drift); const i=list.findIndex(c=>c.id===id); if(i>=0){talkIdx=i; render();} }
+});
+
+/* country */
+function setCtx(c){ ctx=c; try{localStorage.setItem("qe-ctx",c)}catch(e){} $("#c-in").setAttribute("aria-pressed",c==="in"); $("#c-uk").setAttribute("aria-pressed",c==="uk"); if(step===3) renderTalk(); }
+$("#c-in").addEventListener("click",()=>setCtx("in")); $("#c-uk").addEventListener("click",()=>setCtx("uk"));
+
+/* drawer */
+const TEAMS = [
+  ["Data","Data engineering",`${fmt(M.trans)} transactions`,"SQL turns them into one row per customer per month."],
+  ["Insight","Analytics","3 months","The balance starts sliding about 3 months before the drop."],
+  ["Model","Data science",`${Math.round(M.recall*100)}% caught`,"Calling the top 10% catches this share of drifters, on months the model never saw."],
+  ["Governance","Model risk","Fair by gender","Gender and age are left out, then checked. Data drift is monitored."],
+  ["Action","Relationship managers","Support first","Struggling customers get help, not a sales call."],
+  ["Proof","Business","Control group","Call half the list, leave half, compare. That's how a bank proves it works."]];
+$("#teams").innerHTML = TEAMS.map((t,i)=>`<div class="team"><span class="n">0${i+1}</span><b>${t[0]} <span style="font-weight:400;color:var(--muted);font-family:var(--body);font-size:.85rem">· ${t[1]}</span></b><em>${t[2]}</em><span style="grid-column:2">${t[3]}</span></div>`).join("");
+function openHow(){ $("#how").hidden=false; $("#close-how").focus(); }
+$("#open-how").addEventListener("click",openHow);
+$("#close-how").addEventListener("click",()=>{$("#how").hidden=true;});
+$("#how").addEventListener("click",e=>{ if(e.target.id==="how") $("#how").hidden=true; });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") $("#how").hidden=true; });
+
+/* redraw dots on theme change */
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ if(step===4) drawDots(); });
+new MutationObserver(()=>{ if(step===4) drawDots(); }).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+setCtx(ctx);
+openId = W()[0].id;
+render();
+</script>
