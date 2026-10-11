@@ -1,0 +1,656 @@
+<title>Quiet Exits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a bank's decision pipeline as the spine. Six stage tabs across the top, one working panel below. */
+:root{
+  --bg:#eef2f4; --surface:#ffffff; --sunk:#e3e9ed; --ink:#122029; --muted:#55646f; --line:#cdd6dc;
+  --accent:#0b6b73; --accent-soft:#d5ebec; --risk:#b4401a; --risk-soft:#f6e1d8; --ok:#2c7a4e; --ok-soft:#dcefe3; --warn:#9a6a10; --warn-soft:#f4ead2;
+  --chart-a:#0b6b73; --chart-b:#b4401a; --chart-c:#8a97a1;
+  --display:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1419; --surface:#152028; --sunk:#1b2932; --ink:#e4ecf1; --muted:#97a7b2; --line:#2a3a45;
+  --accent:#4fbfb8; --accent-soft:#183a3d; --risk:#f08a64; --risk-soft:#3d2219; --ok:#6cc893; --ok-soft:#183324; --warn:#e2b34f; --warn-soft:#3a2f17;
+  --chart-a:#4fbfb8; --chart-b:#f08a64; --chart-c:#6f818d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1419; --surface:#152028; --sunk:#1b2932; --ink:#e4ecf1; --muted:#97a7b2; --line:#2a3a45;
+  --accent:#4fbfb8; --accent-soft:#183a3d; --risk:#f08a64; --risk-soft:#3d2219; --ok:#6cc893; --ok-soft:#183324; --warn:#e2b34f; --warn-soft:#3a2f17;
+  --chart-a:#4fbfb8; --chart-b:#f08a64; --chart-c:#6f818d; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:800;line-height:1.02}
+h2{font-size:1.55rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* masthead */
+.mast{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:28px;align-items:end;margin-bottom:26px}
+.mast .lede{font-size:1.08rem;margin-top:12px}
+.ledger{font-family:var(--mono);font-size:.8rem;border-top:2px solid var(--ink);display:grid;grid-template-columns:1fr auto;}
+.ledger div{padding:7px 0;border-bottom:1px dashed var(--line)}
+.ledger div:nth-child(even){text-align:right;font-weight:500}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:999px;cursor:pointer;font-size:.85rem}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* pipeline nav */
+.pipe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;margin-bottom:22px;counter-reset:st}
+.stage{position:relative;text-align:left;border:1px solid var(--line);background:var(--surface);padding:12px 14px 14px;cursor:pointer;border-right-width:0;min-width:0}
+.stage:last-child{border-right-width:1px}
+.stage:first-child{border-radius:10px 0 0 10px}.stage:last-child{border-radius:0 10px 10px 0}
+.stage .n{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.stage .t{font-family:var(--display);font-weight:700;font-size:1rem;display:block;margin-top:2px}
+.stage .team{font-size:.78rem;color:var(--muted);display:block}
+.stage .k{font-family:var(--mono);font-size:.78rem;margin-top:8px;display:block;color:var(--accent)}
+.stage[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage[aria-selected="true"] .team,.stage[aria-selected="true"] .n{color:var(--bg);opacity:.7}
+.stage[aria-selected="true"] .k{color:var(--accent-soft)}
+.stage:not([aria-selected="true"]):hover{background:var(--sunk)}
+
+/* panels */
+.panel{display:grid;gap:18px}
+.head{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.who{background:var(--sunk);border-radius:10px;padding:14px 16px;font-size:.88rem;display:grid;gap:6px}
+.who b{font-family:var(--display)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0;display:grid;gap:10px;align-content:start}
+.card h3 + p{font-size:.9rem}
+.stat{display:grid;gap:2px}
+.stat .v{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1.1}
+.stat .l{font-size:.85rem;color:var(--muted)}
+.chart{position:relative;height:260px}
+.chart.tall{height:320px}
+.note{font-size:.84rem;color:var(--muted)}
+.lesson{border-left:4px solid var(--warn);background:var(--warn-soft);border-radius:0 10px 10px 0;padding:14px 16px;display:grid;gap:6px}
+.wrong{display:grid;gap:8px;font-size:.88rem}
+.wrong li{margin-left:1.1em}
+pre{font-family:var(--mono);font-size:.78rem;line-height:1.5;background:var(--sunk);border-radius:10px;padding:14px;overflow:auto;max-height:420px;margin:0}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-weight:500;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.r,th.r{text-align:right}
+.tbl{overflow-x:auto}
+.pill{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 9px;border-radius:999px;font-family:var(--mono);letter-spacing:.02em}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.risk{background:var(--risk-soft);color:var(--risk)}.pill.neutral{background:var(--sunk);color:var(--muted)}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr) 4.2rem;gap:10px;align-items:center;font-size:.86rem}
+.bar .track{height:12px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:6px}
+.bar .fill.hot{background:var(--risk)}
+.selrow{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.8rem;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.timeline{display:grid;grid-template-columns:repeat(72,1fr);height:34px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.timeline span{display:block}
+.tl-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted)}
+.tl-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* call desk */
+.desk{display:grid;grid-template-columns:minmax(0,22rem) minmax(0,1fr);gap:18px;align-items:start}
+.queue{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:grid}
+.queue .qhead{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.qlist{max-height:620px;overflow-y:auto}
+.qitem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:10px 14px;cursor:pointer}
+.qitem:hover{background:var(--sunk)}
+.qitem[aria-selected="true"]{background:var(--accent-soft)}
+.qitem .rank{font-family:var(--mono);font-size:.75rem;color:var(--muted);width:2.2rem}
+.qitem .nm{font-weight:600;font-size:.9rem;display:block}
+.qitem .sg{font-size:.76rem;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qitem .amt{font-family:var(--mono);font-size:.8rem;text-align:right}
+.stripe{width:4px;align-self:stretch;border-radius:2px}
+.cust{display:grid;gap:16px}
+.custtop{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start}
+.reasons{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.reasons li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:.9rem}
+.reasons li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--risk);margin-top:.5em}
+.action{background:var(--accent-soft);border-radius:10px;padding:14px 16px;display:grid;gap:6px}
+.msg{font-size:.9rem;background:var(--sunk);border-radius:10px;padding:12px 14px;white-space:pre-wrap}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.85rem;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink)}
+.sliders{display:grid;gap:12px}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) 5rem;gap:4px 12px;align-items:center;font-size:.86rem}
+.sl input{grid-column:1 / -1;width:100%;accent-color:var(--accent)}
+.sl output{font-family:var(--mono);text-align:right}
+.gauge{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.gauge .big{font-family:var(--display);font-size:2.4rem;font-weight:800}
+.reveal{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:8px}
+
+/* governance */
+.card-rows{display:grid;grid-template-columns:minmax(0,10rem) minmax(0,1fr);gap:8px 16px;font-size:.88rem}
+.card-rows dt{color:var(--muted)} .card-rows dd{margin:0}
+.lines{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.lines div{border-top:3px solid var(--accent);padding-top:8px;font-size:.86rem;display:grid;gap:4px}
+.rules{display:grid;gap:10px}
+.rule{display:grid;gap:3px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.rule b{font-family:var(--display)}
+
+.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted);display:grid;gap:6px}
+
+@media (max-width:900px){
+  .mast,.head,.desk{grid-template-columns:minmax(0,1fr)}
+  .pipe{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stage{border-right-width:1px;border-radius:0!important}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .wrap{padding-inline:16px}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2,.lines{grid-template-columns:minmax(0,1fr)}
+  .bar{grid-template-columns:minmax(0,7rem) minmax(0,1fr) 3.6rem}
+  .card-rows{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <div class="eyebrow">A bank analytics project · real transactions</div>
+      <h1>Quiet Exits</h1>
+      <p class="lede">Customers rarely say goodbye. Their balances do. This follows one problem, savings quietly draining out of accounts that still look healthy, through the six teams that turn bank data into a decision.</p>
+    </div>
+    <div class="ledger num" id="ledger"></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="eyebrow">Pick a stage. Each one is a real team in any bank.</div>
+    <div class="seg" role="group" aria-label="Regulator context">
+      <span class="eyebrow" style="align-self:center;padding:0 8px">Rules</span>
+      <button id="ctx-in" aria-pressed="true">India</button>
+      <button id="ctx-uk" aria-pressed="false">UK</button>
+    </div>
+  </div>
+
+  <nav class="pipe" role="tablist" aria-label="Pipeline stages" id="pipe"></nav>
+
+  <main id="panels">
+
+  <!-- 1 DATA -->
+  <section class="panel" data-stage="1" role="tabpanel">
+    <div class="head">
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Stage 1 · Data</div>
+        <h2>A million transactions become one row per customer per month</h2>
+        <p>Raw bank data is a stream of transactions. Nobody can make a decision from that. The first job is to reshape it into a monthly view of every account: balance, money in, money out, where it went. Every bank's data team keeps a table like this.</p>
+      </div>
+      <div class="who"><b>Who does this</b><span>Data engineering and the data warehouse team.</span><span><b>Tools</b> SQL, a warehouse (Snowflake, Teradata, BigQuery), scheduled jobs.</span><span><b>Output</b> a trusted, documented table other teams build on.</span></div>
+    </div>
+    <div class="grid3" id="s1-stats"></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>The raw tables</h3>
+        <div class="tbl"><table id="s1-tables"></table></div>
+        <p class="note">Source: the PKDD'99 Czech bank dataset (Berka and Sochorova), real anonymised data from 1993 to 1998. Amounts are in Czech crowns (CZK).</p>
+      </div>
+      <div class="card">
+        <h3>What one account looks like after the SQL</h3>
+        <div class="chart"><canvas id="c-acct"></canvas></div>
+        <p class="note">Account <span id="s1-acct-id"></span>: monthly average balance. Quiet months carry the last known balance forward, so gaps don't look like empty accounts.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h3>The SQL that builds the monthly view</h3><button class="btn ghost" id="sql-toggle" aria-expanded="false">Show the SQL</button></div>
+      <pre id="sql" hidden></pre>
+    </div>
+    <div class="card wrong"><h3>What can go wrong here</h3><ul style="margin:0;padding:0">
+      <li>The public copy shifted every date by 20 years and divided amounts by 10. Left unfixed, every trend and amount would be wrong. The SQL restores both.</li>
+      <li>Months with no transactions disappear from a simple GROUP BY. A customer who goes quiet would vanish instead of showing up as a risk.</li>
+      <li>One account can have two holders. Joining on all of them double counts money, so the profile uses the owner only.</li></ul></div>
+  </section>
+
+  <!-- 2 INSIGHT -->
+  <section class="panel" data-stage="2" role="tabpanel" hidden>
+    <div class="head">
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Stage 2 · Insight</div>
+        <h2>The slide starts about three months before anyone would notice</h2>
+        <p>Before building any model, analysts look for the shape of the problem: how often it happens, to whom, and what it looks like in the months before.</p>
+      </div>
+      <div class="who"><b>Who does this</b><span>Analytics and MI (management information).</span><span><b>Tools</b> SQL, Python or Power BI, charts.</span><span><b>Output</b> a clear definition of the problem and where to look.</span></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Balance of drifting vs stable accounts</h3>
+        <p class="note">Median balance as a share of the 6-month average. Month 0 is the last month the bank can see.</p>
+        <div class="chart"><canvas id="c-event"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>How often accounts drift, month by month</h3>
+        <p class="note">Share of accounts whose next 3 months fall below 70% of their usual balance.</p>
+        <div class="chart"><canvas id="c-rate"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Who drifts</h3>
+        <div class="selrow" id="seg-chips"></div>
+        <div class="bars" id="seg-bars"></div>
+        <p class="note" id="seg-note"></p>
+      </div>
+      <div class="lesson">
+        <div class="eyebrow">A hypothesis that failed</div>
+        <h3>Transfers to other banks are not a warning sign here</h3>
+        <p style="font-size:.9rem" id="lesson-text"></p>
+        <p style="font-size:.9rem">So the model learns from the data instead of from our assumption. Checking a belief before building on it is most of what analytics is.</p>
+      </div>
+    </div>
+    <div class="card"><h3>Total money held across all accounts</h3><div class="chart"><canvas id="c-port"></canvas></div><p class="note">The bank grew fast in this period, which is why drift is measured per account, against each customer's own usual balance.</p></div>
+  </section>
+
+  <!-- 3 MODEL -->
+  <section class="panel" data-stage="3" role="tabpanel" hidden>
+    <div class="head">
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Stage 3 · Model</div>
+        <h2>Predicting who will drift in the next three months</h2>
+        <p>A gradient boosted tree model (LightGBM) looks at 23 signals per account and gives each one a probability of drifting. It is tested the way banks test: trained on the past, then scored on later months it has never seen.</p>
+      </div>
+      <div class="who"><b>Who does this</b><span>Data science.</span><span><b>Tools</b> Python, scikit-learn, LightGBM, SHAP explanations.</span><span><b>Output</b> a model, its test results and an explanation for every score.</span></div>
+    </div>
+    <div class="card">
+      <h3>Train on the past, test on the future</h3>
+      <div class="timeline" id="timeline" aria-label="Timeline of training and test months"></div>
+      <div class="tl-legend"><span><i style="background:var(--chart-c)"></i>History only</span><span><i style="background:var(--chart-a)"></i>Training months</span><span><i style="background:var(--chart-b)"></i>Test months (unseen)</span><span><i style="background:var(--ink)"></i>Today: Sep 1998</span></div>
+      <p class="note">A random split would let the model peek at the future. Splitting by time is how a bank checks it will still work next quarter.</p>
+    </div>
+    <div class="grid3" id="s3-stats"></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Call more people, catch more drifters</h3>
+        <p class="note">Test months. Customers ranked by the model, compared with picking at random.</p>
+        <div class="chart"><canvas id="c-curve"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>What the model pays attention to</h3>
+        <p class="note">Average size of each signal's effect on scores (SHAP).</p>
+        <div class="bars" id="imp-bars"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>If we call the top 10% each month</h3>
+        <div class="tbl"><table id="confusion"></table></div>
+        <p class="note">Roughly 1 in 3 calls reaches someone who really was about to drift. That is the realistic hit rate for this kind of model, and stage 6 shows why it still pays.</p>
+      </div>
+      <div class="card">
+        <h3>Are the probabilities honest?</h3>
+        <p class="note">When the model says 30%, about 30% should drift. Each dot is a tenth of customers.</p>
+        <div class="chart"><canvas id="c-calib"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 GOVERNANCE -->
+  <section class="panel" data-stage="4" role="tabpanel" hidden>
+    <div class="head">
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Stage 4 · Governance</div>
+        <h2>No model reaches a customer until someone independent signs it off</h2>
+        <p>Banks keep a separate team whose job is to challenge models: is it accurate, is it fair, is it legal, and will we notice when it stops working? This is the step most graduates have never heard of.</p>
+      </div>
+      <div class="who"><b>Who does this</b><span>Model risk management, the "second line".</span><span><b>Tools</b> validation tests, fairness checks, a model inventory.</span><span><b>Output</b> a model card and an approve, approve with conditions, or reject decision.</span></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Model card</h3>
+        <dl class="card-rows" id="modelcard"></dl>
+      </div>
+      <div class="card">
+        <h3>The three lines of defence</h3>
+        <div class="lines">
+          <div><b>1st line</b><span>The business that owns and uses the model. Here, retail banking.</span></div>
+          <div><b>2nd line</b><span>Model risk and compliance. Validate it independently and can say no.</span></div>
+          <div><b>3rd line</b><span>Internal audit. Checks that the first two did their jobs.</span></div>
+        </div>
+        <h3 style="margin-top:8px" id="rules-title"></h3>
+        <div class="rules" id="rules"></div>
+        <p class="note">A learning summary, not legal advice.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Fairness check: does it treat groups alike?</h3>
+      <p class="note">Gender and age are deliberately left out of the model. That alone does not prove fairness, because other signals can stand in for them (receiving a pension is a stand-in for age). So we test the outcomes by group.</p>
+      <div class="tbl"><table id="fair"></table></div>
+      <p class="note" id="fair-note"></p>
+    </div>
+    <div class="card">
+      <h3>Monitoring: is today's data still like the training data?</h3>
+      <p class="note">Population stability index (PSI). Under 0.1 is stable, 0.1 to 0.25 needs a look, above 0.25 needs action.</p>
+      <div class="tbl"><table id="psi"></table></div>
+      <p class="note">Two of the alerts are expected and harmless: customers naturally get older with the bank, and a single month (September) has a seasonal pattern the multi-year training data averages out. Deciding which alerts matter is a human judgement, which is why monitoring needs an owner.</p>
+    </div>
+  </section>
+
+  <!-- 5 ACTION -->
+  <section class="panel" data-stage="5" role="tabpanel" hidden>
+    <div class="head">
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Stage 5 · Action</div>
+        <h2>Today's call list for a relationship manager</h2>
+        <p>The model is useless until it changes what someone does on Monday morning. This is what the front line sees: who to call, why, and what to say. Ranked by balance at risk, not just probability, so a likely drift on a large balance comes first.</p>
+      </div>
+      <div class="who"><b>Who does this</b><span>Relationship managers, branch and contact centre staff.</span><span><b>Tools</b> the CRM, where this list would live.</span><span><b>Output</b> calls made and outcomes logged, which feed back into stage 6.</span></div>
+    </div>
+    <div class="desk">
+      <div class="queue">
+        <div class="qhead">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><b style="font-family:var(--display)">Call queue · Sep 1998</b><span class="note num" id="q-count"></span></div>
+          <label class="note" for="q-filter">Show</label>
+          <select id="q-filter" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--surface)"></select>
+        </div>
+        <div class="qlist" id="qlist" role="listbox" aria-label="Customers to call"></div>
+      </div>
+      <div class="cust" id="cust"></div>
+    </div>
+  </section>
+
+  <!-- 6 PROOF -->
+  <section class="panel" data-stage="6" role="tabpanel" hidden>
+    <div class="head">
+      <div style="display:grid;gap:10px">
+        <div class="eyebrow">Stage 6 · Proof</div>
+        <h2>Did calling the list keep money in the bank?</h2>
+        <p>We scored customers in September 1998 and then checked what really happened from October to December. That tells us how much drifting money the list would have reached. Whether a call actually saves it can only be proven with a live test.</p>
+      </div>
+      <div class="who"><b>Who does this</b><span>Business owners, strategy and finance.</span><span><b>Tools</b> controlled tests, dashboards, the budget.</span><span><b>Output</b> a decision: scale it, change it or stop it.</span></div>
+    </div>
+    <div class="card">
+      <div style="display:grid;gap:14px">
+        <div class="sl" style="max-width:640px"><label for="budget">Calls the team can make this quarter</label><output id="budget-out" class="num"></output><input type="range" id="budget" min="0" max="8" step="1" value="3"></div>
+        <div class="sl" style="max-width:640px"><label for="save">Assumed share of reached money that a call keeps</label><output id="save-out" class="num"></output><input type="range" id="save" min="5" max="50" step="5" value="20"></div>
+      </div>
+      <div class="grid3" id="s6-stats" style="margin-top:6px"></div>
+      <div class="chart tall"><canvas id="c-budget"></canvas></div>
+      <p class="note">Drifting balance reached: the actual money that left (Oct to Dec 1998) from the accounts on the list. Random is the average of 200 random lists of the same size. The save rate is an assumption you control, not a measured result.</p>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>How a bank would prove it for real</h3>
+        <ol style="margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem">
+          <li>Take the top of the list and split it at random into two groups.</li>
+          <li>Call one group. Leave the other alone (the control group).</li>
+          <li>After three months, compare balances between the two groups.</li>
+          <li>The difference is the money the calls kept. Weigh it against staff time.</li>
+        </ol>
+        <p class="note">Without the control group, you can't tell whether a customer stayed because of the call or would have stayed anyway.</p>
+      </div>
+      <div class="card">
+        <h3>Keep it working</h3>
+        <ul style="margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem">
+          <li>Check stability every month (stage 4) and retrain when signals shift.</li>
+          <li>Log every call outcome so the next model learns which actions work.</li>
+          <li>Review fairness each quarter, not only at launch.</li>
+          <li>Retire the model if the controlled test shows no difference.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <footer class="foot">
+    <div>Built by Shreya Sairam · Data: PKDD'99 Financial Data Set (Petr Berka and Marta Sochorova), real anonymised transactions from a Czech bank, 1993 to 1998, via the public Teradata conversion by Dieter Noeth.</div>
+    <div>Pipeline: DuckDB SQL → Python (pandas, LightGBM, scikit-learn) → this page. The model runs live in your browser for the what-if tool.</div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const D = /*__DATA__*/null;
+const TREES = /*__MODEL__*/null;
+const SQL = /*__SQL__*/"";
+const $ = s => document.querySelector(s);
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const czk = n => n >= 1e6 ? (n/1e6).toFixed(n>=1e7?0:1)+"M CZK" : n >= 1e4 ? Math.round(n/1e3)+"k CZK" : fmt(n)+" CZK";
+const pct = (n, d=0) => (n*100).toFixed(d)+"%";
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function predict(x){let s=0;for(const t of TREES){const f=t[0],th=t[1],l=t[2],r=t[3],v=t[4];let i=0;while(f[i]>=0){i=(x[f[i]]<=th[i])?l[i]:r[i];}s+=v[i];}return 1/(1+Math.exp(-s));}
+
+/* ---------- masthead ledger */
+const M = D.meta, S1 = M.stage1;
+$("#ledger").innerHTML = [["Transactions",fmt(S1.trans)],["Accounts",fmt(S1.account)],["Period","1993 to 1998"],["Currency","Czech crowns"],["Accounts scored today",fmt(M.n_today)],["Drift definition","< 70% of usual"]].map(([a,b])=>`<div>${a}</div><div>${b}</div>`).join("");
+
+/* ---------- pipeline */
+const STAGES = [
+  ["Data","Data engineering",fmt(S1.monthly_view)+" account months"],
+  ["Insight","Analytics",pct(D.insight.drift_rate.reduce((a,b)=>a+b.rate,0)/D.insight.drift_rate.length,1)+" drift each month"],
+  ["Model","Data science","Top 10% catch "+pct(D.model.test.recall_top10)],
+  ["Governance","Model risk","Fairness and stability checks"],
+  ["Action","Front office",D.calls.length+" calls queued"],
+  ["Proof","Business","Backtest and live test design"]];
+$("#pipe").innerHTML = STAGES.map((s,i)=>`<button class="stage" role="tab" id="tab${i+1}" aria-selected="${i===0}" aria-controls="p${i+1}" data-go="${i+1}"><span class="n">0${i+1}</span><span class="t">${s[0]}</span><span class="team">${s[1]}</span><span class="k">${s[2]}</span></button>`).join("");
+const drawn = {};
+function go(n){
+  document.querySelectorAll(".stage").forEach(b=>b.setAttribute("aria-selected", b.dataset.go==n));
+  document.querySelectorAll(".panel").forEach(p=>p.hidden = p.dataset.stage!=n);
+  if(!drawn[n]){ drawn[n]=true; DRAW[n](); }
+  try{localStorage.setItem("qe-stage",n)}catch(e){}
+}
+$("#pipe").addEventListener("click", e=>{const b=e.target.closest(".stage"); if(b) go(b.dataset.go)});
+$("#pipe").addEventListener("keydown", e=>{ if(!["ArrowRight","ArrowLeft"].includes(e.key)) return; const cur=+document.querySelector('.stage[aria-selected="true"]').dataset.go; const n=e.key==="ArrowRight"?Math.min(6,cur+1):Math.max(1,cur-1); go(n); $("#tab"+n).focus(); });
+
+/* ---------- charts helpers */
+const charts = {};
+function chart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart($("#"+id), cfg); return charts[id]; }
+function base(extra={}){
+  const ink=css("--muted"), grid=css("--line");
+  return Object.assign({responsive:true,maintainAspectRatio:false,animation:{duration:400},
+    plugins:{legend:{labels:{color:ink,boxWidth:12,font:{family:"IBM Plex Sans"}}},tooltip:{}},
+    scales:{x:{ticks:{color:ink,maxRotation:0,autoSkip:true,maxTicksLimit:8},grid:{color:grid,drawTicks:false}},
+            y:{ticks:{color:ink},grid:{color:grid},border:{display:false}}}}, extra);
+}
+
+/* ---------- stage 1 */
+function draw1(){
+  $("#s1-stats").innerHTML = [[fmt(S1.trans),"raw transactions in"],[fmt(S1.monthly_view),"account months out"],[S1.seconds+" s","to run the whole build"]].map(([v,l])=>`<div class="card stat"><span class="v num">${v}</span><span class="l">${l}</span></div>`).join("");
+  const rows=[["trans","Every deposit, withdrawal and transfer",S1.trans],["account","Account, branch area, date opened",S1.account],["client","Age, gender, home area",S1.client],["loan","Loans and repayment status",S1.loan],["card","Cards issued",S1.card],["district","Area salary, unemployment, urban share",S1.district]];
+  $("#s1-tables").innerHTML = `<tr><th>Table</th><th>What it holds</th><th class="r">Rows</th></tr>`+rows.map(r=>`<tr><td style="font-family:var(--mono)">${r[0]}</td><td>${r[1]}</td><td class="r num">${fmt(r[2])}</td></tr>`).join("");
+  $("#sql").textContent = SQL;
+  const c = D.calls[0]; $("#s1-acct-id").textContent = c.id;
+  const labels = c.hist.map((_,i)=>{const d=new Date(1998,8-(c.hist.length-1-i),1);return d.toLocaleString("en-US",{month:"short",year:"2-digit"});});
+  chart("c-acct",{type:"line",data:{labels,datasets:[{label:"Monthly average balance (CZK)",data:c.hist,borderColor:css("--chart-a"),backgroundColor:css("--accent-soft"),fill:true,tension:.25,pointRadius:0,borderWidth:2}]},options:base({plugins:{legend:{display:false}}})});
+}
+$("#sql-toggle").addEventListener("click",e=>{const p=$("#sql");p.hidden=!p.hidden;e.target.textContent=p.hidden?"Show the SQL":"Hide the SQL";e.target.setAttribute("aria-expanded",!p.hidden);});
+
+/* ---------- stage 2 */
+let segKey = Object.keys(D.insight.segments)[0];
+function drawSeg(){
+  const rows = D.insight.segments[segKey]; const mx = Math.max(...rows.map(r=>r.rate));
+  const avg = rows.reduce((a,r)=>a+r.rate*r.n,0)/rows.reduce((a,r)=>a+r.n,0);
+  $("#seg-bars").innerHTML = rows.map(r=>`<div class="bar"><span>${r.k}</span><span class="track"><span class="fill ${r.rate>avg*1.2?"hot":""}" style="width:${(r.rate/mx*100).toFixed(1)}%"></span></span><span class="num" style="text-align:right">${pct(r.rate,1)}</span></div>`).join("");
+  $("#seg-note").textContent = `Share of account months that drifted. Average ${pct(avg,1)}. Highlighted bars are well above average.`;
+  document.querySelectorAll("#seg-chips .chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.k===segKey));
+}
+function draw2(){
+  const E = D.insight.event;
+  chart("c-event",{type:"line",data:{labels:E.months.map(m=>m===0?"Today":(m>0?"+"+m:m)),datasets:[
+    {label:`Drifted (${E.n_drift})`,data:E.drift,borderColor:css("--chart-b"),borderWidth:2.5,pointRadius:3,tension:.25},
+    {label:`Stable (${E.n_stable})`,data:E.stable,borderColor:css("--chart-c"),borderWidth:2,pointRadius:0,tension:.25,borderDash:[5,4]}]},
+    options:base({scales:{x:{ticks:{color:css("--muted")},grid:{color:css("--line")}},y:{ticks:{color:css("--muted"),callback:v=>pct(v)},grid:{color:css("--line")},suggestedMin:.4,suggestedMax:1.2}}})});
+  const R = D.insight.drift_rate;
+  chart("c-rate",{type:"line",data:{labels:R.map(r=>r.m),datasets:[{label:"Drift rate",data:R.map(r=>r.rate),borderColor:css("--chart-a"),backgroundColor:css("--accent-soft"),fill:true,pointRadius:0,tension:.3,borderWidth:2}]},
+    options:base({plugins:{legend:{display:false}},scales:{x:{ticks:{color:css("--muted"),maxTicksLimit:6},grid:{display:false}},y:{beginAtZero:true,ticks:{color:css("--muted"),callback:v=>pct(v)},grid:{color:css("--line")}}}})});
+  const P = D.insight.portfolio;
+  chart("c-port",{type:"line",data:{labels:P.map(r=>r.m),datasets:[{label:"Total balance",data:P.map(r=>r.bal),borderColor:css("--chart-a"),backgroundColor:css("--accent-soft"),fill:true,pointRadius:0,tension:.3,borderWidth:2}]},
+    options:base({plugins:{legend:{display:false}},scales:{x:{ticks:{color:css("--muted"),maxTicksLimit:7},grid:{display:false}},y:{ticks:{color:css("--muted"),callback:v=>(v/1e6).toFixed(0)+"M"},grid:{color:css("--line")}}}})});
+  $("#seg-chips").innerHTML = Object.keys(D.insight.segments).map(k=>`<button class="chip" data-k="${k}">${k}</button>`).join("");
+  $("#seg-chips").addEventListener("click",e=>{const c=e.target.closest(".chip"); if(c){segKey=c.dataset.k; drawSeg();}});
+  drawSeg();
+  const md = D.insight.medians;
+  $("#lesson-text").textContent = `We expected customers about to drift to be sending more money to other banks. The data says the opposite: stable accounts send a median ${pct(md["0"].sent_other_share)} of outgoing money to other banks, drifting accounts only ${pct(md["1"].sent_other_share)}. In this bank, transfers to other banks were mostly regular bills. The real tells are a falling balance and large cash withdrawals.`;
+}
+
+/* ---------- stage 3 */
+function draw3(){
+  const T=D.model.test, Tr=D.model.train;
+  $("#s3-stats").innerHTML = [
+    [pct(T.recall_top10),"of drifters caught by calling the top 10%"],
+    [T.lift_top10.toFixed(1)+"×","better than calling at random"],
+    [T.auc.toFixed(2),`ranking quality (AUC) on unseen months. Simple baseline: ${T.auc_baseline.toFixed(2)}. Training: ${Tr.auc.toFixed(2)}`]
+  ].map(([v,l])=>`<div class="card stat"><span class="v num">${v}</span><span class="l">${l}</span></div>`).join("");
+  // timeline 1993-01..1998-12
+  const cells=[]; for(let i=0;i<72;i++){const y=1993+Math.floor(i/12), m=i%12+1, key=y*100+m; let c="--chart-c"; if(key>=199401&&key<=199706)c="--chart-a"; if(key>=199710&&key<=199806)c="--chart-b"; if(key===199809)c="--ink"; cells.push(`<span title="${y}-${String(m).padStart(2,"0")}" style="background:var(${c})"></span>`);} $("#timeline").innerHTML=cells.join("");
+  const C=D.model.curve;
+  chart("c-curve",{type:"line",data:{labels:C.map(c=>c.pct+"%"),datasets:[
+    {label:"Model ranking",data:C.map(c=>c.recall),borderColor:css("--chart-a"),borderWidth:2.5,pointRadius:0,tension:.2},
+    {label:"Random",data:C.map(c=>c.pct/100),borderColor:css("--chart-c"),borderDash:[5,4],borderWidth:2,pointRadius:0}]},
+    options:base({scales:{x:{title:{display:true,text:"Share of customers called",color:css("--muted")},ticks:{color:css("--muted"),maxTicksLimit:6},grid:{display:false}},y:{min:0,max:1,title:{display:true,text:"Share of drifters caught",color:css("--muted")},ticks:{color:css("--muted"),callback:v=>pct(v)},grid:{color:css("--line")}}}})});
+  const I=D.model.importance.slice(0,9), mx=I[0].v;
+  $("#imp-bars").innerHTML = I.map(r=>`<div class="bar"><span title="${r.label}">${r.label}</span><span class="track"><span class="fill" style="width:${(r.v/mx*100).toFixed(1)}%"></span></span><span class="num" style="text-align:right">${r.v.toFixed(2)}</span></div>`).join("");
+  const Q=D.model.confusion;
+  $("#confusion").innerHTML = `<tr><th></th><th class="r">Really drifted</th><th class="r">Stayed</th></tr>
+   <tr><td><b>Called</b></td><td class="r num"><span class="pill ok">${fmt(Q.tp)}</span></td><td class="r num">${fmt(Q.fp)}</td></tr>
+   <tr><td><b>Not called</b></td><td class="r num"><span class="pill risk">${fmt(Q.fn)}</span></td><td class="r num">${fmt(Q.tn)}</td></tr>`;
+  const K=D.model.calibration;
+  chart("c-calib",{type:"scatter",data:{datasets:[
+    {label:"Model",data:K.map(k=>({x:k.pred,y:k.actual})),backgroundColor:css("--chart-a"),pointRadius:5},
+    {label:"Perfect",type:"line",data:[{x:0,y:0},{x:.7,y:.7}],borderColor:css("--chart-c"),borderDash:[5,4],pointRadius:0,borderWidth:1.5}]},
+    options:base({scales:{x:{type:"linear",min:0,max:.7,title:{display:true,text:"Predicted",color:css("--muted")},ticks:{color:css("--muted"),callback:v=>pct(v)},grid:{color:css("--line")}},y:{min:0,max:.7,title:{display:true,text:"Actually drifted",color:css("--muted")},ticks:{color:css("--muted"),callback:v=>pct(v)},grid:{color:css("--line")}}}})});
+}
+
+/* ---------- stage 4 */
+const RULES = {
+  in:{title:"In India",items:[
+    ["RBI FREE-AI framework (2025)","The RBI committee's framework for responsible AI in finance: board-approved AI policy, explainability, fairness and human oversight."],
+    ["Digital Personal Data Protection Act, 2023","Customer data may only be used for purposes the customer was told about. The DPDP Rules were notified in November 2025, phased in over 12 to 18 months."],
+    ["RBI Integrated Ombudsman Scheme","Customers can escalate unresolved complaints to the RBI, so a pushy retention call can become a regulatory problem."]]},
+  uk:{title:"In the UK",items:[
+    ["PRA SS1/23, model risk management","Banks must keep a model inventory, validate models independently and monitor them once live. In force since May 2024."],
+    ["FCA Consumer Duty (2023)","Firms must deliver good outcomes and take extra care with customers in vulnerable circumstances. A stressed customer gets help, not a sales call."],
+    ["UK GDPR","A lawful basis is needed to profile customers, and people have rights around automated decisions. Here a person makes every call, so the model only assists."]]}
+};
+let ctx = "in";
+try{ctx = localStorage.getItem("qe-ctx")||"in"}catch(e){}
+function drawRules(){
+  const R=RULES[ctx]; $("#rules-title").textContent = R.title+", the rules that apply";
+  $("#rules").innerHTML = R.items.map(([a,b])=>`<div class="rule"><b>${a}</b><span>${b}</span></div>`).join("");
+  $("#ctx-in").setAttribute("aria-pressed",ctx==="in"); $("#ctx-uk").setAttribute("aria-pressed",ctx==="uk");
+}
+["in","uk"].forEach(k=>$("#ctx-"+k).addEventListener("click",()=>{ctx=k; try{localStorage.setItem("qe-ctx",k)}catch(e){} drawRules(); if(drawn[5]) renderCust();}));
+function draw4(){
+  const T=D.model.test;
+  const rows=[["Purpose","Rank savings customers by balance likely to drain away in the next 3 months, so staff can call them first."],
+    ["Decision it supports","Who a person calls. It never changes a customer's account, price or eligibility on its own."],
+    ["Data","PKDD'99 Czech bank, 1993 to 1998. Train Jan 1994 to Jun 1997, test Oct 1997 to Jun 1998."],
+    ["Left out on purpose","Gender and age. Watched for proxies: pension income."],
+    ["Performance (unseen months)",`AUC ${T.auc.toFixed(2)} vs baseline ${T.auc_baseline.toFixed(2)}. Top 10% catch ${pct(T.recall_top10)} of drifters, hit rate ${pct(T.precision_top10)}.`],
+    ["Known limits","Old data from one country. No record of calls made, so it predicts drift, not whether a call works. Seasonal months score differently."],
+    ["Status",`<span class="pill warn">Approve with conditions</span> Live test with a control group before full rollout.`]];
+  $("#modelcard").innerHTML = rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("");
+  drawRules();
+  const F=D.governance.fairness;
+  const all=[...F.gender.map(r=>({...r,dim:"Gender"})),...F.age.map(r=>({...r,dim:"Age"}))];
+  const caughtVals=all.map(r=>r.caught).filter(v=>v!=null);
+  $("#fair").innerHTML = `<tr><th>Group</th><th class="r">Customers</th><th class="r">Actually drifted</th><th class="r">Flagged</th><th class="r">Drifters caught</th><th class="r">Hit rate</th><th>Check</th></tr>`+
+    all.map(r=>{const gap = r.caught==null?0:Math.abs(r.caught-T.recall_top10); const pill = r.caught==null?'<span class="pill neutral">too few</span>': gap>0.1?'<span class="pill warn">review</span>':'<span class="pill ok">in range</span>';
+      return `<tr><td>${r.dim}: ${r.group}</td><td class="r num">${fmt(r.n)}</td><td class="r num">${pct(r.actual_drift,1)}</td><td class="r num">${pct(r.flagged,1)}</td><td class="r num">${r.caught==null?"–":pct(r.caught)}</td><td class="r num">${r.precision==null?"–":pct(r.precision)}</td><td>${pill}</td></tr>`}).join("");
+  const old=F.age.find(r=>r.group==="60+");
+  $("#fair-note").textContent = `Flag rates follow real drift rates, and men and women are caught at similar rates. Customers over 60 drift far less (${pct(old.actual_drift,1)}), so they are flagged less. That is expected, but the drifters among them are caught at ${old.caught==null?"an unknown":pct(old.caught)} rate, which a validator would review before sign-off.`;
+  const P=D.governance.monitor;
+  $("#psi").innerHTML = `<tr><th>Signal</th><th class="r">PSI</th><th>Status</th></tr>`+P.map(r=>`<tr><td>${r.label}</td><td class="r num">${r.psi.toFixed(2)}</td><td>${r.psi>.25?'<span class="pill risk">action</span>':r.psi>.1?'<span class="pill warn">look</span>':'<span class="pill ok">stable</span>'}</td></tr>`).join("")+
+    `<tr><td><b>Model score overall</b></td><td class="r num"><b>${D.governance.score_psi.toFixed(2)}</b></td><td>${D.governance.score_psi>.1?'<span class="pill warn">look</span>':'<span class="pill ok">stable</span>'}</td></tr>`;
+}
+
+/* ---------- stage 5 */
+const SIGCOL = {"Signs of financial stress":"--warn","Large cash withdrawals":"--risk","Income has slowed or moved":"--chart-b","Money is moving to another bank":"--risk","Balance sliding":"--chart-c"};
+let sel = 0, filt = "All", reveal = false;
+const LEVERS = [["balance_vs_peak","Balance vs its 12-month high",0.1,1.3,0.05,v=>pct(v)],["balance_trend","Balance trend (last 3 vs previous 3)",0.2,1.6,0.05,v=>pct(v)],["cash_share","Share taken out as cash",0,1,0.05,v=>pct(v)],["income_change","Income vs previous 3 months",0,2,0.05,v=>pct(v)],["months_since_credit","Months since money came in",0,6,1,v=>v.toFixed(0)]];
+let x = null;
+function list(){ return D.calls.map((c,i)=>({...c,rank:i+1})).filter(c=>filt==="All"||c.signal===filt); }
+function renderQueue(){
+  const L=list(); $("#q-count").textContent = L.length+" customers";
+  $("#qlist").innerHTML = L.map(c=>`<button class="qitem" role="option" aria-selected="${c.rank-1===sel}" data-i="${c.rank-1}"><span class="stripe" style="background:var(${SIGCOL[c.signal]})"></span><span style="min-width:0"><span class="nm">#${c.rank} · Account ${c.id}</span><span class="sg">${c.signal}</span></span><span class="amt num">${czk(c.at_risk)}</span></button>`).join("");
+}
+function draft(c){
+  const first = ctx==="uk" ? "Hello, this is your relationship manager at the bank." : "Namaste, this is your relationship manager from the bank.";
+  if(c.signal==="Signs of financial stress") return `${first} I'm calling to check in, as it's been a while since we spoke. If anything has changed with your income or repayments, we have options that could make things easier, and there's no obligation. Would a short chat this week suit you?`;
+  if(c.signal==="Large cash withdrawals") return `${first} I noticed some larger withdrawals recently and wanted to check whether you're planning a big purchase. If so, there may be a better way to fund it without running down your savings. Could I take ten minutes to go through the options with you?`;
+  if(c.signal==="Income has slowed or moved") return `${first} Just a quick check-in. If you've changed jobs or moved where your salary is paid, I can help set things up so your account keeps working the way you need. When is a good time to talk?`;
+  return `${first} It's been a while since we reviewed your account, and I'd like to make sure it still suits you. Would you have ten minutes this week?`;
+}
+function renderCust(){
+  const c = D.calls[sel]; x = c.x.slice();
+  const fi = f => D.features.indexOf(f);
+  const care = c.signal==="Signs of financial stress";
+  const duty = ctx==="uk" ? (care?"Consumer Duty: possible vulnerable customer. Offer support, don't sell.":"Consumer Duty: offer only what fits the customer's needs.") : (care?"Fair practice: possible financial stress. Offer support, don't sell.":"Fair practice: explain clearly and record consent before any product switch.");
+  $("#cust").innerHTML = `
+  <div class="card">
+    <div class="custtop">
+      <div style="display:grid;gap:4px"><div class="eyebrow">Rank #${sel+1} of ${D.calls.length} · ${c.region}</div><h2>Account ${c.id}</h2><span class="note">${c.gender==="F"?"Woman":"Man"}, ${c.age} · customer for ${c.tenure} months · usual balance ${czk(c.usual)}</span></div>
+      <div class="stat" style="text-align:right"><span class="v num">${czk(c.at_risk)}</span><span class="l">balance at risk · ${pct(c.p)} chance of drift</span></div>
+    </div>
+    <div class="chart" style="height:170px"><canvas id="c-cust"></canvas></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Why this customer is on the list</h3><ul class="reasons">${c.reasons.map(r=>`<li><span>${r.text}</span></li>`).join("")}</ul><p class="note">Top reasons from the model (SHAP), written for staff.</p></div>
+    <div class="action"><div class="eyebrow">Suggested next step</div><h3>${c.signal}</h3><p style="font-size:.9rem">${c.action}</p><span class="pill ${care?"warn":"neutral"}" style="justify-self:start">${duty}</span></div>
+  </div>
+  <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h3>Call opener</h3><button class="btn ghost" id="copy">Copy</button></div><div class="msg" id="msg">${draft(c)}</div></div>
+  <div class="grid2">
+    <div class="card"><h3>What if things changed?</h3><p class="note">Move a signal and the live model rescores. This shows what the model reacts to. It doesn't prove a change would cause the customer to stay.</p>
+      <div class="gauge"><span class="big num" id="wi-p">${pct(c.p)}</span><span class="note" id="wi-d">chance of drift, unchanged</span></div>
+      <div class="sliders">${LEVERS.map(([f,l,mn,mx,st,fm])=>`<div class="sl"><label for="lv-${f}">${l}</label><output id="o-${f}" class="num">${fm(Math.min(mx,Math.max(mn,c.x[fi(f)])))}</output><input type="range" id="lv-${f}" min="${mn}" max="${mx}" step="${st}" value="${Math.min(mx,Math.max(mn,c.x[fi(f)]))}"></div>`).join("")}</div>
+      <button class="btn ghost" id="wi-reset" style="justify-self:start">Reset to actual</button></div>
+    <div class="card"><h3>What actually happened</h3><p class="note">The bank couldn't know this in September. We can check it now.</p>
+      <div class="reveal"><button class="btn" id="rv">${reveal?"Hide":"Reveal"} Oct to Dec 1998</button><div id="rv-body" ${reveal?"":"hidden"}>${c.outcome.drifted==null?"No data after September.":`<p><span class="pill ${c.outcome.drifted?"risk":"ok"}">${c.outcome.drifted?"Drifted":"Stayed"}</span> Next 3 months averaged ${czk(c.outcome.next3)}, against a usual ${czk(c.usual)}.</p>`}<p class="note" style="margin-top:6px">${c.outcome.drifted?"A call here would have reached money that really left.":"A false alarm. About 2 in 3 calls are, which stage 6 accounts for."}</p></div></div>
+    </div>
+  </div>`;
+  const labels=[...c.hist.map((_,i)=>new Date(1998,8-(c.hist.length-1-i),1)),...c.after.map((_,i)=>new Date(1998,9+i,1))].map(d=>d.toLocaleString("en-US",{month:"short",year:"2-digit"}));
+  const known=[...c.hist,...c.after.map(()=>null)], after=[...c.hist.map((v,i)=>i===c.hist.length-1?v:null),...(reveal?c.after:c.after.map(()=>null))];
+  chart("c-cust",{type:"line",data:{labels,datasets:[
+    {label:"Known in Sep 1998",data:known,borderColor:css("--chart-a"),backgroundColor:css("--accent-soft"),fill:true,pointRadius:0,tension:.25,borderWidth:2},
+    {label:"What happened next",data:after,borderColor:css("--chart-b"),borderDash:[5,4],pointRadius:2,tension:.25,borderWidth:2,spanGaps:false},
+    {label:"Usual balance",data:labels.map(()=>c.usual),borderColor:css("--chart-c"),borderWidth:1,pointRadius:0,borderDash:[2,3]}]},
+    options:base({plugins:{legend:{labels:{color:css("--muted"),boxWidth:10}}},scales:{x:{ticks:{color:css("--muted"),maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:css("--muted"),callback:v=>Math.round(v/1000)+"k"},grid:{color:css("--line")}}}})});
+  LEVERS.forEach(([f,,,,,fm])=>{ $("#lv-"+f).addEventListener("input",e=>{ x[fi(f)] = +e.target.value; $("#o-"+f).textContent = fm(+e.target.value); const p=predict(x); $("#wi-p").textContent=pct(p); const dlt=p-c.p; $("#wi-d").textContent = Math.abs(dlt)<.005?"chance of drift, unchanged":`chance of drift, ${dlt>0?"up":"down"} ${pct(Math.abs(dlt))} points`; });});
+  $("#wi-reset").addEventListener("click",renderCust);
+  $("#rv").addEventListener("click",()=>{reveal=!reveal; renderCust();});
+  $("#copy").addEventListener("click",e=>{const t=$("#msg").textContent; navigator.clipboard.writeText(t).then(()=>{e.target.textContent="Copied"; setTimeout(()=>e.target.textContent="Copy",1500)}).catch(()=>{const r=document.createRange(); r.selectNodeContents($("#msg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); e.target.textContent="Press Ctrl+C";});});
+}
+function draw5(){
+  const sigs=["All",...Object.keys(SIGCOL).filter(s=>D.calls.some(c=>c.signal===s))];
+  $("#q-filter").innerHTML = sigs.map(s=>`<option>${s}</option>`).join("");
+  $("#q-filter").addEventListener("change",e=>{filt=e.target.value; const L=list(); if(L.length) sel=L[0].rank-1; renderQueue(); renderCust();});
+  $("#qlist").addEventListener("click",e=>{const b=e.target.closest(".qitem"); if(!b) return; sel=+b.dataset.i; renderQueue(); renderCust();});
+  renderQueue(); renderCust();
+}
+
+/* ---------- stage 6 */
+function draw6(){
+  const B=D.budget;
+  const upd=()=>{
+    const b=B[+$("#budget").value], s=+$("#save").value/100;
+    $("#budget-out").textContent=fmt(b.n); $("#save-out").textContent=pct(s);
+    $("#s6-stats").innerHTML=[[czk(b.model_lost),`drifting balance on the model's list (${b.model_drifters} drifters)`],[czk(b.random_lost),"on a random list of the same size"],[czk(b.model_lost*s),`kept, if ${pct(s)} of reached money stays. Random list: ${czk(b.random_lost*s)}`]].map(([v,l],i)=>`<div class="stat" style="border-top:2px solid var(${i===0?"--chart-a":i===1?"--chart-c":"--ink"});padding-top:8px"><span class="v num">${v}</span><span class="l">${l}</span></div>`).join("");
+    chart("c-budget",{type:"bar",data:{labels:B.map(r=>fmt(r.n)+" calls"),datasets:[
+      {label:"Model list",data:B.map(r=>r.model_lost),backgroundColor:B.map((r,i)=>i===+$("#budget").value?css("--chart-a"):css("--accent-soft")),borderColor:css("--chart-a"),borderWidth:1},
+      {label:"Random list",data:B.map(r=>r.random_lost),backgroundColor:css("--chart-c")}]},
+      options:base({scales:{x:{ticks:{color:css("--muted")},grid:{display:false}},y:{title:{display:true,text:"Drifting balance reached",color:css("--muted")},ticks:{color:css("--muted"),callback:v=>(v/1e6).toFixed(1)+"M"},grid:{color:css("--line")}}}})});
+  };
+  $("#budget").max=B.length-1; $("#budget").addEventListener("input",upd); $("#save").addEventListener("input",upd); upd();
+}
+const DRAW={1:draw1,2:draw2,3:draw3,4:draw4,5:draw5,6:draw6};
+
+/* theme changes: redraw open charts */
+function redrawAll(){ Object.keys(drawn).forEach(k=>{ if(k==5){renderCust();} else DRAW[k](); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+drawRules();
+let start=1; try{start=+localStorage.getItem("qe-stage")||1}catch(e){}
+if(location.hash && /^#stage[1-6]$/.test(location.hash)) start=+location.hash.slice(6);
+go(start);
+</script>
