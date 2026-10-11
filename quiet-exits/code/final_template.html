@@ -1,0 +1,309 @@
+<title>Quiet Exits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: three questions down one calm page. Each section = one big answer on the left, one interactive visual on the right. Light by design. */
+:root{
+  --paper:#FAFAF7; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --line:#E7E5DF; --soft:#F2F1EC;
+  --t0:#D9822B; --t1:#5B6CD9; --t2:#8FA39A; --stay:#B9C0C8; --good:#2E8B6E; --warn:#B4541E;
+  --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--t1);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:24px}
+
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(250,250,247,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:16px;min-height:62px;flex-wrap:wrap;padding-block:8px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;letter-spacing:-.01em}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.qnav{display:flex;gap:4px;margin-left:auto;background:var(--soft);border-radius:12px;padding:4px}
+.qnav a{text-decoration:none;color:var(--muted);font-weight:700;font-size:.85rem;padding:7px 12px;border-radius:9px}
+.qnav a.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,33,61,.12)}
+.home{font-size:.85rem;color:var(--muted);text-decoration:none;font-weight:600}
+
+/* hero */
+.hero{padding-block:44px 8px;display:grid;gap:10px}
+.hero h1{margin:0;font-size:clamp(2rem,4.6vw,3.2rem);line-height:1.05;font-weight:800;letter-spacing:-.03em;max-width:20ch;text-wrap:balance}
+.hero p{margin:0;color:var(--muted);font-size:1.05rem;max-width:62ch}
+
+/* sections */
+section{padding-block:40px;border-bottom:1px solid var(--line);scroll-margin-top:70px}
+.q{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.q .n{font-family:var(--mono);font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+.q h2{margin:0;font-size:clamp(1.4rem,2.8vw,1.9rem);font-weight:800;letter-spacing:-.02em}
+.grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr);gap:28px;align-items:start}
+.answer{display:grid;gap:12px}
+.big{font-size:clamp(2.6rem,6vw,4rem);font-weight:800;letter-spacing:-.04em;line-height:1}
+.big small{font-size:.35em;font-weight:700;color:var(--muted);letter-spacing:0;margin-left:6px}
+.sub{color:var(--muted);margin:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;display:grid;gap:14px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-weight:700;font-size:.82rem;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.toggle{display:inline-flex;align-items:center;gap:10px;border:0;background:transparent;padding:0;font-weight:700}
+.toggle .sw{width:40px;height:22px;border-radius:11px;background:var(--line);position:relative;transition:background .2s}
+.toggle .sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s}
+.toggle[aria-pressed="true"] .sw{background:var(--ink)}
+.toggle[aria-pressed="true"] .sw::after{left:21px}
+.verdict{display:inline-flex;gap:8px;align-items:center;background:#E8F4EF;color:var(--good);font-weight:700;border-radius:12px;padding:8px 12px;font-size:.9rem;justify-self:start}
+.verdict.off{background:#FBEDE4;color:var(--warn)}
+.insight{border-left:3px solid var(--t0);padding:4px 0 4px 12px;font-size:.92rem;color:var(--ink)}
+.insight b{font-weight:800}
+svg text{font-family:var(--ui)}
+
+/* stacked bar */
+.stack{display:flex;height:58px;border-radius:14px;overflow:hidden;gap:3px}
+.seg{border:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:0 12px;color:#fff;font-weight:800;font-size:.95rem;min-width:0;transition:flex-grow .5s,opacity .2s;text-align:left}
+.seg span{font-size:.72rem;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.seg[aria-pressed="false"]{opacity:.45}
+.stack.actual{height:16px;border-radius:8px}
+.stack.actual div{transition:flex-grow .5s}
+.lab{font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between}
+.facts{display:grid;gap:10px}
+.fact{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.fact b{font-size:1.25rem;font-weight:800;min-width:4.2rem}
+.fact span{font-size:.9rem;color:var(--muted)}
+.where{display:flex;flex-wrap:wrap;gap:6px}
+.where span{background:var(--soft);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:600}
+
+/* responses */
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.resp{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:10px;align-content:start;text-align:left;transition:border-color .2s,box-shadow .2s}
+.resp[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 6px 24px rgba(20,33,61,.08)}
+.resp .kind{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+.resp .kind i{width:10px;height:10px;border-radius:3px}
+.resp h3{margin:0;font-size:1.15rem;font-weight:800}
+.resp p{margin:0;color:var(--muted);font-size:.9rem}
+.resp .amt{font-size:1.5rem;font-weight:800}
+.resp .act{font-size:.8rem;font-weight:800;justify-self:start;border-radius:999px;padding:4px 10px;background:var(--soft)}
+.resp[aria-pressed="true"] .act{background:var(--ink);color:#fff}
+.total{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}
+.total div{background:var(--soft);border-radius:16px;padding:14px 16px;display:grid;gap:2px}
+.total b{font-size:1.6rem;font-weight:800}
+.total span{color:var(--muted);font-size:.85rem}
+
+/* examples */
+.ex{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.excard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:6px;min-width:0}
+.excard b{font-size:.9rem}
+.excard .m{font-size:.76rem;color:var(--muted)}
+.pred{font-size:.74rem;font-weight:700;border-radius:999px;padding:2px 8px;justify-self:start}
+
+/* how it works */
+details{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:14px 18px}
+details+details{margin-top:10px}
+summary{cursor:pointer;font-weight:800}
+details .in{display:grid;gap:8px;margin-top:10px;color:var(--muted);font-size:.9rem}
+details .in b{color:var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+td.r,th.r{text-align:right}
+footer{padding-block:28px 48px;color:var(--muted);font-size:.8rem;display:grid;gap:8px}
+footer a{color:var(--ink);font-weight:600}
+
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.cards{grid-template-columns:minmax(0,1fr)}.ex{grid-template-columns:repeat(2,minmax(0,1fr))}.qnav{margin-left:0;order:3;width:100%}.qnav a{flex:1;text-align:center}}
+@media (max-width:520px){.wrap{padding-inline:16px}.total{grid-template-columns:minmax(0,1fr)}.seg{padding:0 8px;font-size:.82rem}.seg span{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 18h16"/><path d="M7 14V9M12 14V6M17 14v-3"/></svg></span>Quiet Exits</div>
+    <nav class="qnav" aria-label="Questions"><a href="#how-much" data-s="how-much" class="on">1 · How much</a><a href="#why" data-s="why">2 · Why</a><a href="#what" data-s="what">3 · What to do</a></nav>
+    <a class="home" href="../">Portfolio</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <h1>Why money quietly leaves a bank, and what to do about it.</h1>
+    <p>Customers rarely close accounts. Their savings drain away instead. Using 1.06 million real transactions from a Czech bank, this forecasts how much will leave next quarter, predicts why, and matches each reason to the right response.</p>
+  </div>
+
+  <section id="how-much">
+    <div class="q"><span class="n">1</span><h2>How much will leave next quarter?</h2></div>
+    <div class="grid">
+      <div class="answer">
+        <div class="chips" id="qchips" role="group" aria-label="Quarter"></div>
+        <div class="big num" id="fc"></div>
+        <p class="sub" id="fc-sub"></p>
+        <button class="toggle" id="reveal" aria-pressed="false"><span class="sw"></span>Show what actually happened</button>
+        <div class="verdict" id="verdict" hidden></div>
+        <div class="insight" id="season"></div>
+      </div>
+      <div class="panel">
+        <svg id="qchart" viewBox="0 0 640 300" width="100%" role="img" aria-label="Forecast and actual outflow for four quarters"></svg>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="q"><span class="n">2</span><h2>Why will it leave?</h2></div>
+    <div class="grid" style="grid-template-columns:minmax(0,1fr)">
+      <div class="panel">
+        <div class="lab"><span>Forecast, split by likely reason · tap a reason</span><span id="why-total" class="mono"></span></div>
+        <div class="stack" id="stack"></div>
+        <div id="actualwrap" hidden><div class="lab"><span>What actually happened</span><span id="act-total" class="mono"></span></div><div class="stack actual" id="astack"></div></div>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:18px">
+      <div class="answer" id="typeinfo"></div>
+      <div class="panel"><div class="lab"><span>Typical balance, months before and after</span><span>share of usual balance</span></div><svg id="pchart" viewBox="0 0 640 260" width="100%" role="img" aria-label="Typical balance path for the selected reason compared with customers who stayed"></svg></div>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="q"><span class="n">3</span><h2>What should the bank do?</h2></div>
+    <p class="sub" style="margin:-8px 0 18px">Not every exit is a problem. Tap a card to choose whether the bank acts on it.</p>
+    <div class="cards" id="cards"></div>
+    <div class="total"><div><b class="num" id="t-act"></b><span>money the bank can influence</span></div><div><b class="num" id="t-let"></b><span>normal outflow the bank should let go</span></div></div>
+    <p class="sub" style="margin-top:14px;font-size:.88rem">Customers showing signs of financial stress get support, never a sales offer, whatever their reason.</p>
+  </section>
+
+  <section id="examples">
+    <div class="q"><span class="n">↳</span><h2 style="font-size:1.25rem">Real accounts behind <span id="ex-type"></span></h2></div>
+    <div class="ex" id="ex"></div>
+  </section>
+
+  <section style="border-bottom:0">
+    <details><summary>How it works</summary><div class="in" id="how"></div></details>
+    <details><summary>What this can't tell you</summary><div class="in">
+      <span><b>Old data, one country.</b> A Czech bank, 1993 to 1998. The method transfers; the numbers won't.</span>
+      <span><b>Reasons are inferred, not known.</b> "Big one-off withdrawal" could be a wedding, a car or a flat. Real bank data would add card spend categories and app activity, and with consent, Account Aggregator data.</span>
+      <span><b>No record of what the bank did.</b> So this can't prove a response works. That needs a test with a control group.</span>
+      <span><b>A chosen definition.</b> Money "leaves" when the next 3 months fall below 70% of the usual balance.</span>
+    </div></details>
+  </section>
+</main>
+
+<footer class="wrap">
+  <span>Built by Shreya Sairam · Data: PKDD'99 Financial Data Set (Berka and Sochorova), real anonymised transactions · DuckDB, Python, LightGBM</span>
+  <span><a href="report.html">Full technical report</a> · <a href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></span>
+</footer>
+
+<script>
+const D = /*__FINAL__*/null;
+const $ = s => document.querySelector(s);
+const M = n => (n/1e6).toFixed(2)+"M";
+const K = n => n>=1e6 ? (n/1e6).toFixed(2)+"M" : Math.round(n/1000)+"k";
+const pct = v => Math.round(v*100)+"%";
+const COL = ["#D9822B","#5B6CD9","#8FA39A"];
+const SHORT = ["Big one-off withdrawal","Income stopped","Gradual spending"];
+const RESP = [
+  {kind:"Capture", title:"Offer a loan or instalments", text:"A big purchase is already decided. Offer to fund it so the savings stay with the bank.", act:true},
+  {kind:"Win back", title:"Win back the salary account", text:"Income moved or stopped. Offer a salary account switch, or support if it's job loss.", act:true},
+  {kind:"Let it go", title:"Normal life, no action", text:"Spending a little more than earning. Chasing this money costs more than it keeps.", act:false}];
+let qi = 3, reveal = false, ti = 0;
+const acts = RESP.map(r=>r.act);
+
+/* ---------- section 1 */
+$("#qchips").innerHTML = D.quarters.map((q,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===qi}">${q.q}</button>`).join("");
+$("#qchips").addEventListener("click", e=>{ const b=e.target.closest(".chip"); if(!b) return; qi=+b.dataset.i; renderAll(); });
+$("#reveal").addEventListener("click", ()=>{ reveal=!reveal; renderAll(); });
+const MON = {"1997-12":"31 Dec 1997","1998-03":"31 Mar 1998","1998-06":"30 Jun 1998","1998-09":"30 Sep 1998"};
+function render1(){
+  const q = D.quarters[qi];
+  document.querySelectorAll("#qchips .chip").forEach(c=>c.setAttribute("aria-pressed", +c.dataset.i===qi));
+  $("#fc").innerHTML = `${M(q.forecast)}<small>CZK</small>`;
+  $("#fc-sub").textContent = `Forecast made on ${MON[q.made]} for ${q.q}, across ${q.n.toLocaleString("en-US")} accounts.`;
+  $("#reveal").setAttribute("aria-pressed", reveal);
+  const err = (q.forecast-q.actual)/q.actual, v=$("#verdict");
+  v.hidden = !reveal; v.className = "verdict"+(Math.abs(err)>.15?" off":"");
+  v.textContent = `Actual: ${M(q.actual)} · forecast ${err>0?"high":"low"} by ${Math.round(Math.abs(err)*100)}%`;
+  $("#season").innerHTML = qi===0 ? `<b>After New Year, outflows roughly double.</b> The forecast learned this from earlier years, without it the forecast was off by half.` : `<b>Outflows are seasonal.</b> The forecast adjusts for the time of year, learned only from earlier years.`;
+  // chart
+  const W=640,H=300,p={l:56,r:16,t:20,b:40}, mx=Math.max(...D.quarters.map(x=>Math.max(x.forecast,x.actual)))*1.12;
+  const bw=(W-p.l-p.r)/D.quarters.length, Y=v=>H-p.b-(v/mx)*(H-p.t-p.b);
+  let s=""; for(let v=0; v<=mx; v+=2e6){ s+=`<line x1="${p.l}" x2="${W-p.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#E7E5DF"/><text x="${p.l-8}" y="${Y(v)+4}" font-size="11" fill="#5E6676" text-anchor="end">${v/1e6}M</text>`; }
+  D.quarters.forEach((x,i)=>{
+    const cx=p.l+bw*i+bw/2, w=Math.min(46,bw*.3), sel=i===qi;
+    s+=`<g style="cursor:pointer" data-i="${i}"><rect x="${p.l+bw*i+4}" y="${p.t}" width="${bw-8}" height="${H-p.t-p.b}" fill="${sel?"#F2F1EC":"transparent"}" rx="10"/>`;
+    s+=`<rect x="${cx-w-3}" y="${Y(x.forecast)}" width="${w}" height="${H-p.b-Y(x.forecast)}" rx="6" fill="#14213D" opacity="${sel?1:.55}"/>`;
+    if(reveal) s+=`<rect x="${cx+3}" y="${Y(x.actual)}" width="${w}" height="${H-p.b-Y(x.actual)}" rx="6" fill="#D9822B" opacity="${sel?1:.55}"/>`;
+    s+=`<text x="${cx}" y="${H-p.b+20}" font-size="12.5" font-weight="${sel?800:600}" fill="#14213D" text-anchor="middle">${x.q}</text></g>`;
+  });
+  s+=`<g font-size="12" font-weight="700"><rect x="${p.l}" y="2" width="10" height="10" rx="2" fill="#14213D"/><text x="${p.l+16}" y="11" fill="#14213D">Forecast</text>${reveal?`<rect x="${p.l+92}" y="2" width="10" height="10" rx="2" fill="#D9822B"/><text x="${p.l+108}" y="11" fill="#14213D">Actual</text>`:""}</g>`;
+  $("#qchart").innerHTML = s;
+}
+$("#qchart").addEventListener("click", e=>{ const g=e.target.closest("g[data-i]"); if(g){ qi=+g.dataset.i; renderAll(); } });
+
+/* ---------- section 2 */
+function render2(){
+  const q = D.quarters[qi], f=q.f_type, tot=f.reduce((a,b)=>a+b,0), at=q.a_type, atot=at.reduce((a,b)=>a+b,0);
+  $("#why-total").textContent = M(tot)+" CZK";
+  $("#stack").innerHTML = f.map((v,i)=>`<button class="seg" data-t="${i}" aria-pressed="${i===ti}" style="flex-grow:${v};background:${COL[i]}">${pct(v/tot)}<span>${SHORT[i]}</span></button>`).join("");
+  $("#actualwrap").hidden = !reveal; $("#act-total").textContent = M(atot)+" CZK";
+  $("#astack").innerHTML = at.map((v,i)=>`<div style="flex-grow:${v};background:${COL[i]};opacity:${i===ti?1:.45}"></div>`).join("");
+  const t = SHORT[ti], sg = D.signals[t], acc = D.type_acc.per[t], cz = D.concentr;
+  const signs = ti===0 ? [[pct(sg.max_cash),`largest single cash withdrawal vs balance, already before the exit (normal: ${pct(sg.base_max_cash)})`],[pct(sg.bal_vs_peak),`balance vs its 12-month high (normal: ${pct(sg.base_bal_vs_peak)})`]]
+    : ti===1 ? [[pct(sg.max_cash),`largest single cash withdrawal vs balance (normal: ${pct(sg.base_max_cash)})`],[pct(sg.bal_vs_peak),`balance vs its 12-month high (normal: ${pct(sg.base_bal_vs_peak)})`]]
+    : [[sg.out_vs_in.toFixed(2)+"×",`money out vs money in over 3 months (normal: ${sg.base_out_vs_in.toFixed(2)}×)`],[pct(sg.bal_vs_peak),`balance vs its 12-month high (normal: ${pct(sg.base_bal_vs_peak)})`]];
+  const top = arr => arr.slice(0,2).map(x=>x.k).join(", ");
+  $("#typeinfo").innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:14px;height:14px;border-radius:4px;background:${COL[ti]}"></span><b style="font-size:1.3rem">${t}</b></div>
+    <div class="big num" style="font-size:2.6rem">${M(f[ti])}<small>CZK forecast</small></div>
+    <div class="facts">${signs.map(([b,s])=>`<div class="fact"><b class="num">${b}</b><span>${s}</span></div>`).join("")}
+      <div class="fact"><b class="num">${pct(acc.recall)}</b><span>of these the model names correctly 3 months early</span></div></div>
+    <div class="where"><span>Mostly: ${top(cz.age[t])}</span><span>${top(cz.income[t])}</span><span>${top(cz.region[t])}</span></div>`;
+  // pattern chart
+  const P=D.paths, W=640,H=260,p={l:44,r:16,t:16,b:32}, X=i=>p.l+i*(W-p.l-p.r)/9, Y=v=>H-p.b-(v-.3)/(1.3-.3)*(H-p.t-p.b);
+  let s=""; [.4,.6,.8,1,1.2].forEach(v=>{ s+=`<line x1="${p.l}" x2="${W-p.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#E7E5DF"/><text x="${p.l-6}" y="${Y(v)+4}" font-size="11" fill="#5E6676" text-anchor="end">${Math.round(v*100)}%</text>`; });
+  s+=`<line x1="${X(6)}" x2="${X(6)}" y1="${p.t}" y2="${H-p.b}" stroke="#14213D" stroke-dasharray="3 4"/><text x="${X(6)+6}" y="${p.t+10}" font-size="11" font-weight="700" fill="#14213D">Today</text>`;
+  [-6,-3,0,3].forEach((m,j)=>{ const i=m+6; s+=`<text x="${X(i)}" y="${H-10}" font-size="11" fill="#5E6676" text-anchor="${i===0?"start":i===9?"end":"middle"}">${m===0?"today":(m>0?"+":"")+m+" months"}</text>`; });
+  const line=(arr,col,w,dash)=>`<polyline points="${arr.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" ${dash?'stroke-dasharray="5 4"':''} stroke-linecap="round" stroke-linejoin="round"/>`;
+  s+=line(P["Stayed"],"#B9C0C8",2,true);
+  SHORT.forEach((k,i)=>{ if(i!==ti) s+=line(P[k],COL[i],1.5,false).replace('stroke-width','opacity=".25" stroke-width'); });
+  s+=line(P[t],COL[ti],3.5,false);
+  s+=`<text x="${X(9)}" y="${Y(P[t][9])+18}" font-size="12" font-weight="800" fill="${COL[ti]}" text-anchor="end">${t}</text><text x="${X(9)}" y="${Y(P["Stayed"][9])-8}" font-size="11" fill="#5E6676" text-anchor="end">Stayed</text>`;
+  $("#pchart").innerHTML = s;
+}
+$("#stack").addEventListener("click", e=>{ const b=e.target.closest(".seg"); if(b){ ti=+b.dataset.t; renderAll(); } });
+
+/* ---------- section 3 */
+function render3(){
+  const f = D.quarters[qi].f_type;
+  $("#cards").innerHTML = RESP.map((r,i)=>`<button class="resp" data-i="${i}" aria-pressed="${acts[i]}"><span class="kind" style="color:${COL[i]}"><i style="background:${COL[i]}"></i>${r.kind}</span><h3>${r.title}</h3><p>${SHORT[i]}: ${r.text}</p><span class="amt num">${M(f[i])}</span><span class="act">${acts[i]?"Bank acts":"Let it go"}</span></button>`).join("");
+  const a = f.reduce((s,v,i)=>s+(acts[i]?v:0),0), l = f.reduce((s,v,i)=>s+(acts[i]?0:v),0);
+  $("#t-act").textContent = M(a)+" CZK"; $("#t-let").textContent = M(l)+" CZK";
+}
+$("#cards").addEventListener("click", e=>{ const b=e.target.closest(".resp"); if(!b) return; const i=+b.dataset.i; acts[i]=!acts[i]; ti=i; renderAll(); });
+
+/* ---------- examples */
+function renderEx(){
+  const t = SHORT[ti]; $("#ex-type").textContent = t.toLowerCase();
+  $("#ex").innerHTML = D.examples[t].map(a=>{
+    const h=a.h, n=h.length, k=Math.min(12,n), mx=Math.max(...h,a.usual)*1.08, X=i=>i/(n-1)*200, Y=v=>58-(v/mx)*54;
+    const pts = arr=>arr.map(([i,v])=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+    const before = h.slice(0,k).map((v,i)=>[i,v]), after = reveal ? h.slice(k-1).map((v,i)=>[i+k-1,v]) : [];
+    const ok = a.pred===ti;
+    return `<div class="excard"><b>Account ${a.id}</b><span class="m">${a.g==="F"?"Woman":"Man"}, ${a.age} · ${a.region}</span>
+      <svg viewBox="0 0 200 62" width="100%" height="62" aria-hidden="true"><line x1="0" x2="200" y1="${Y(a.usual)}" y2="${Y(a.usual)}" stroke="#E7E5DF" stroke-dasharray="3 3"/><line x1="${X(k-1)}" x2="${X(k-1)}" y1="0" y2="62" stroke="#14213D" stroke-dasharray="2 3"/><polyline points="${pts(before)}" fill="none" stroke="#14213D" stroke-width="1.8"/>${after.length?`<polyline points="${pts(after)}" fill="none" stroke="${COL[ti]}" stroke-width="2.2"/>`:""}</svg>
+      <span class="m">Usual ${K(a.usual)} · ${reveal?`lost ${K(a.lost)}`:`${pct(a.p)} chance of leaving`}</span>
+      <span class="pred" style="background:${ok?"#E8F4EF":"#F2F1EC"};color:${ok?"#2E8B6E":"#5E6676"}">Model said: ${SHORT[a.pred].toLowerCase()} ${ok?"✓":""}</span></div>`; }).join("");
+}
+
+/* ---------- how it works */
+const TA = D.type_acc, MD = D.model;
+$("#how").innerHTML = `
+  <span><b>Data.</b> ${MD.trans.toLocaleString("en-US")} real transactions from ${MD.accounts.toLocaleString("en-US")} accounts, turned into one row per account per month with SQL (DuckDB).</span>
+  <span><b>Model 1: will money leave?</b> LightGBM on 23 signals such as balance trend, cash share and income change. On months it never saw: AUC ${MD.auc.toFixed(2)}, and the top 10% of scores catch ${pct(MD.recall10)} of leavers.</span>
+  <span><b>Model 2: why?</b> Past exits labelled by how the money left, then a second model predicts the type from the 3 months before. Right ${pct(TA.acc)} of the time on unseen months, against ${pct(TA.base)} for always guessing the most common type.</span>
+  <span><b>Forecast.</b> Probability × expected loss for every account, adjusted for season using only earlier years.</span>
+  <span><b>Fairness.</b> Gender and age are left out of the models and checked afterwards. Flag rates follow real outflow rates across groups.</span>
+  <table><tr><th>Reason</th><th class="r">Named correctly</th><th class="r">When named, right</th></tr>${SHORT.map(t=>`<tr><td>${t}</td><td class="r">${pct(TA.per[t].recall)}</td><td class="r">${pct(TA.per[t].precision)}</td></tr>`).join("")}</table>`;
+
+/* nav highlight */
+const secs = ["how-much","why","what"].map(id=>document.getElementById(id));
+addEventListener("scroll", ()=>{ let on="how-much"; secs.forEach(s=>{ if(s.getBoundingClientRect().top < 160) on=s.id; }); document.querySelectorAll(".qnav a").forEach(a=>a.classList.toggle("on", a.dataset.s===on)); }, {passive:true});
+
+function renderAll(){ render1(); render2(); render3(); renderEx(); }
+renderAll();
+</script>

@@ -298,3 +298,10 @@ for i in range(len(today)):
                      regular_income=float(r.regular_income), reasons=reasons, x=[float(r[f]) for f in FEATURES]))
 (OUT / "today_all.json").write_text(json.dumps(rows))
 print("today rows", len(rows))
+
+# ---------------------------------------------------------------- save for the final page
+model.save_model(str(OUT / "drift_model.txt"))
+keep = ["account_id", "month", "past6", "fut3", "drift", "lost_balance", "balance", "region", "age", "gender"] + FEATURES
+d[keep].to_parquet(OUT / "features.parquet")
+json.dump(dict(features=FEATURES, drop_frac=drop_frac), open(OUT / "drift_meta.json", "w"))
+print("saved model + features", len(d))
