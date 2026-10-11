@@ -1,0 +1,422 @@
+<title>Genetic Testing Decision Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Same light working-tool frame as the churn project. Patient on the left, live recommendation on the right, safeguards below in tabs. */
+:root{
+  --paper:#F7F7F4; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --line:#E5E3DC; --soft:#F0EFEA;
+  --ok:#2E8B6E; --warn:#C99A1E; --bad:#C8462F; --acc:#5B6CD9; --accsoft:#E9ECFB;
+  --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:22px;padding-block:0 40px}
+header{display:flex;align-items:center;gap:14px;padding-block:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.tagline{color:var(--muted);font-weight:600}
+header .home{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-spacing:-.02em}
+.lede{margin:0 0 18px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:14px;min-width:0}
+.out{position:sticky;top:14px}
+.lbl{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-weight:700;font-size:.84rem}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:.86rem;padding:7px 12px;border-radius:9px}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,33,61,.12)}
+.rec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.f{background:var(--soft);border-radius:12px;padding:8px 11px;min-width:0}
+.f span{display:block;font-size:.72rem;color:var(--muted);font-weight:700}
+.f b{display:block;font-weight:700;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f.hid b{color:#A5A9B2;font-weight:600;letter-spacing:.04em}
+.f.full{grid-column:1/-1}
+.tg{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;font-weight:600;text-align:left;width:100%}
+.sw{width:36px;height:21px;border-radius:11px;background:#D6D3CA;position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
+.tg[aria-pressed="true"] .sw{background:var(--ink)}
+.tg[aria-pressed="true"] .sw::after{left:18px}
+.tgs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.syms{display:flex;flex-wrap:wrap;gap:6px}
+.sym{display:inline-flex;align-items:center;gap:6px;background:var(--accsoft);color:#2B3A8F;border-radius:999px;padding:5px 6px 5px 11px;font-weight:600;font-size:.84rem}
+.sym button{border:0;background:#fff;border-radius:50%;width:20px;height:20px;line-height:1;font-weight:800;color:#2B3A8F;padding:0}
+.add{display:flex;gap:8px}
+.add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 11px;background:#fff}
+.big{font-size:1.65rem;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.pill{display:inline-block;border-radius:999px;padding:3px 10px;font-weight:800;font-size:.78rem;color:#fff}
+.genes{display:flex;flex-wrap:wrap;gap:6px}
+.gene{font-family:var(--mono);font-size:.8rem;border:1px solid #E7B9AE;color:#9C3522;border-radius:7px;padding:2px 7px;background:#FFF7F5}
+.cands{display:grid;gap:6px}
+.cand{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--soft);border-radius:12px;padding:8px 11px}
+.cand b{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand small{color:var(--muted);grid-column:1/-1;font-size:.78rem}
+.bar{height:6px;border-radius:3px;background:#E3E1DA;width:70px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc)}
+.note{color:var(--muted);font-size:.84rem;margin:0}
+.block{border-radius:14px;padding:12px 14px;background:#FCEDEA;color:#7A2716;font-weight:600}
+.block b{display:block;font-size:1.05rem;margin-bottom:3px;color:var(--bad)}
+.payload{font-family:var(--mono);font-size:.76rem;background:#14213D;color:#DCE3F5;border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;margin:0}
+.payload .pii{color:#FF9B85;font-weight:600}
+details summary{cursor:pointer;font-weight:700;font-size:.86rem;color:var(--muted)}
+.order{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.order select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-weight:600}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:10px;padding:9px 16px;font-weight:800}
+.btn:disabled{background:#C9C6BC;cursor:not-allowed}
+.msg{font-size:.86rem;font-weight:600;margin:0}
+.tabsbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}
+.verdict{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:800;font-size:.95rem}
+.verdict .dot{width:11px;height:11px;border-radius:50%}
+.panel{margin-top:10px}
+.ctrls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ctrl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:11px 13px;background:#fff}
+.ctrl .st{width:10px;height:10px;border-radius:50%}
+.ctrl b{font-size:.95rem}
+.ctrl p{grid-column:2/-1;margin:0;color:var(--muted);font-size:.84rem}
+.tags{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:.72rem;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--soft);color:#3D4557}
+.ctrl.off{background:#FFF8F6;border-color:#F0C9BF}
+.log{display:grid;gap:0;font-size:.84rem}
+.le{display:grid;grid-template-columns:70px 92px minmax(0,1fr) 74px;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);align-items:baseline}
+.le .h{font-family:var(--mono);font-size:.74rem;color:var(--muted);text-align:right}
+.le.broken{background:#FCEDEA}
+.le .t{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+.le .r{font-weight:700}
+.chain{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.okline{font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{text-align:left;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 6px;border-bottom:1px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+.mbar{display:inline-block;height:7px;border-radius:4px;background:var(--acc);vertical-align:middle;margin-right:6px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ba div{background:var(--soft);border-radius:12px;padding:10px 12px}
+.ba .n{font-size:1.5rem;font-weight:800}
+ul.lim{margin:0;padding-left:18px;color:var(--muted);font-size:.86rem;display:grid;gap:4px}
+footer{margin-top:22px;color:var(--muted);font-size:.82rem;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:var(--ink);font-weight:700}
+@media (max-width:860px){
+  .layout,.grid2{grid-template-columns:1fr}
+  .out{position:static}
+  .wrap{padding-inline:16px}
+  .tgs,.ctrls{grid-template-columns:1fr}
+  .le{grid-template-columns:62px minmax(0,1fr) 60px}
+  .le .r{display:none}
+  .verdict{margin-left:0;width:100%}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M7 3c0 6 10 6 10 12s-10 6-10 6"/><path d="M17 3c0 6-10 6-10 12"/><path d="M9 7h6M9 17h6"/></svg></span>Genetic Testing Decision Support</div>
+    <span class="tagline">with privacy and safety built in</span>
+    <a class="home" href="../">Portfolio</a>
+  </header>
+
+  <h1>Which genetic test should this patient get?</h1>
+  <p class="lede">A GP tool built on real disease and gene data, with the privacy, consent and audit checks a clinic would need. Patients are fictional.</p>
+
+  <div class="layout">
+    <div class="card">
+      <div class="lbl">Patient</div>
+      <div class="row" id="presets"></div>
+      <div>
+        <div class="lbl" style="margin-bottom:6px">Viewing as</div>
+        <div class="seg" id="roles" role="group" aria-label="Role"></div>
+      </div>
+      <div class="rec" id="record"></div>
+      <div>
+        <div class="lbl" style="margin-bottom:6px">Consent on file</div>
+        <div class="tgs" id="consents"></div>
+      </div>
+      <div>
+        <div class="lbl" style="margin-bottom:6px">Symptoms <span style="text-transform:none;letter-spacing:0;font-weight:600">(HPO coded)</span></div>
+        <div class="syms" id="syms"></div>
+        <div class="add" style="margin-top:8px" id="addrow">
+          <input id="addin" list="hpolist" placeholder="Add a symptom, e.g. Seizure" aria-label="Add a symptom">
+          <datalist id="hpolist"></datalist>
+          <button class="chip" id="addbtn">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card out" id="out" aria-live="polite"></div>
+  </div>
+
+  <div class="tabsbar">
+    <div class="seg" id="tabs" role="tablist">
+      <button data-t="ctrl" aria-pressed="true">Safeguards</button>
+      <button data-t="log" aria-pressed="false">Audit trail</button>
+      <button data-t="model" aria-pressed="false">Model checks</button>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <div class="card panel" id="p-ctrl">
+    <div class="row" style="justify-content:space-between"><div class="lbl">Switch a safeguard off to see what breaks</div></div>
+    <div class="ctrls" id="ctrls"></div>
+  </div>
+
+  <div class="card panel" id="p-log" hidden>
+    <div class="chain">
+      <div class="lbl">Every action, chained by SHA-256 so edits show</div>
+      <span id="chain" class="okline"></span>
+      <button class="chip" id="tamper" style="margin-left:auto">Try editing an old entry</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card panel" id="p-model" hidden>
+    <div class="grid2">
+      <div>
+        <div class="lbl" style="margin-bottom:8px">Tested on 500 simulated patients per scenario</div>
+        <table id="evtab"></table>
+        <p class="note" style="margin-top:8px">Each simulated patient shows some of a real condition's symptoms, plus unrelated ones that a busy GP might also note.</p>
+      </div>
+      <div style="display:grid;gap:12px">
+        <div class="lbl">What the checks caught</div>
+        <p class="msg" style="font-weight:600">The old confidence label said "High" too often. Rebuilt from the test results, on a separate set of 500 cases:</p>
+        <div class="ba" id="ba"></div>
+        <div class="lbl">Known limits</div>
+        <ul class="lim">
+          <li>Simulated patients, not real clinic records.</li>
+          <li>400 common symptom terms, not the full HPO.</li>
+          <li>Not a medical device. Real use would need regulatory review (EU IVDR, Japan PMD Act) and clinical validation.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer><span>Built on the Human Phenotype Ontology (577 conditions, their genes and symptoms). Rebuild of my ISYS90069 eHealth group project. Designed against GDPR, Japan's APPI and the EU AI Act, with controls mapped to SOC 2 and ISO 27001. Not certified or legally reviewed.</span><a href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/genetic-testing/code" target="_blank" rel="noopener">Code</a></footer>
+</div>
+
+<script>
+const G = /*__GX__*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = v => Math.round(v*100) + "%";
+
+/* ---------- SHA-256 (sync, small) ---------- */
+function sha256(str){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const b=new TextEncoder().encode(str), l=b.length, n=((l+9+63)>>6)<<6, m=new Uint8Array(n);
+  m.set(b); m[l]=0x80; const dv=new DataView(m.buffer); dv.setUint32(n-4,(l*8)>>>0); dv.setUint32(n-8,Math.floor(l/0x20000000));
+  let h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]; const w=new Uint32Array(64);
+  const r=(x,k)=>(x>>>k)|(x<<(32-k));
+  for(let o=0;o<n;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){ const s0=r(w[i-15],7)^r(w[i-15],18)^(w[i-15]>>>3), s1=r(w[i-2],17)^r(w[i-2],19)^(w[i-2]>>>10); w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0; }
+    let [a,bb,c,d,e,f,g,hh]=h;
+    for(let i=0;i<64;i++){ const t1=(hh+(r(e,6)^r(e,11)^r(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0, t2=((r(a,2)^r(a,13)^r(a,22))+((a&bb)^(a&c)^(bb&c)))>>>0;
+      hh=g; g=f; f=e; e=(d+t1)>>>0; d=c; c=bb; bb=a; a=(t1+t2)>>>0; }
+    h=h.map((v,i)=>(v+[a,bb,c,d,e,f,g,hh][i])>>>0);
+  }
+  return h.map(v=>v.toString(16).padStart(8,"0")).join("");
+}
+
+/* ---------- Matching engine (same maths as the Python engine) ---------- */
+const NT = G.terms.length, ND = G.dis.length;
+const DSET = G.dis.map(d => new Set(d.s));
+function match(sel){
+  const tot = sel.reduce((a,i)=>a+G.w[i],0) || 1, out = [];
+  G.dis.forEach((d,k)=>{ let m=0, info=0; sel.forEach(i=>{ if(DSET[k].has(i)){ m++; info+=G.w[i]; } });
+    if(!m) return; const recall = info/tot, cov = m/d.s.length;
+    out.push({k, name:d.n, genes:d.g, m, size:d.s.length, score:Math.round((0.7*recall+0.3*cov)*1000)/1000, matched:sel.filter(i=>DSET[k].has(i))}); });
+  out.sort((a,b)=> b.score-a.score || b.m-a.m);
+  return out;
+}
+function unitTest(n){ return n===1 ? "Single-gene sequencing" : n<=5 ? "Targeted panel" : n ? "Broad panel or exome" : "Refer to clinical genetics"; }
+function recommend(sel, calibrated){
+  const r = match(sel).slice(0,5); if(!r.length) return null;
+  const lead = r[0], gap = lead.score - (r[1] ? r[1].score : 0), unexpl = sel.length - lead.m;
+  // Calibrated rule (from the model checks): clear lead = gap of 0.1 or more AND at most one symptom unexplained.
+  // Old rule (kept so you can switch back): score >= 0.55 with 3+ matches.
+  const clear = calibrated ? (gap >= 0.1 && unexpl < 2) : (lead.score >= 0.55 && lead.m >= Math.min(3, sel.length));
+  const genes = [...new Set(r.slice(0,3).flatMap(c=>c.genes))].sort();
+  let test, why, list;
+  if(clear && lead.genes.length===1 && gap>=0.1){ test="Single-gene sequencing"; why=`${lead.name} clearly leads and is linked to one gene.`; list=lead.genes; }
+  else if(clear && lead.genes.length>1 && lead.genes.length<=5){ test="Targeted multi-gene panel"; why=`${lead.name} clearly leads. The panel covers its ${lead.genes.length} genes.`; list=lead.genes; }
+  else if(genes.length && genes.length<=12){ test="Targeted multi-gene panel";
+    why = clear ? `${lead.name} leads. The panel covers its genes and the next two candidates.`
+        : unexpl>=2 ? `${lead.name} leads, but ${unexpl} symptoms don't fit it. The panel covers the top 3 candidates (${genes.length} genes).`
+        : `No clear leader, so the panel covers the top 3 candidates (${genes.length} genes).`; list=genes; }
+  else { test="Exome or genome sequencing"; why="Many genes are in play and no candidate clearly leads, so testing broadly is more efficient."; list=genes.slice(0,12); }
+  return {r, lead, gap, unexpl, clear, test, why, genes:list, refer:!clear};
+}
+
+/* ---------- State ---------- */
+const IX = Object.fromEntries(G.terms.map((t,i)=>[t,i]));
+const PRESETS = [
+  {tag:"Clear case", name:"Haruto Sato", dob:"2021-03-14", sex:"Male", ins:"INS-48213-7", addr:"12 Hill St, Brunswick VIC", phone:"0400 118 204", fam:"No known family history",
+   syms:["Ventricular septal defect","Iris coloboma","Umbilical hernia","Tetralogy of Fallot","Hearing impairment"]},
+  {tag:"Two close candidates", name:"Mia Rossi", dob:"2018-09-02", sex:"Female", ins:"INS-70452-1", addr:"4/88 Grey St, St Kilda VIC", phone:"0400 552 931", fam:"Father had short stature",
+   syms:["Clinodactyly","Hypogonadism","Short stature","Low-set ears","Cryptorchidism"]},
+  {tag:"Messy picture", name:"Leo Kumar", dob:"2012-01-27", sex:"Male", ins:"INS-19384-6", addr:"21 Park Rd, Carlton VIC", phone:"0400 937 615", fam:"Aunt had a heart murmur",
+   syms:["Intrauterine growth retardation","Vesicoureteral reflux","Malar flattening","Mitral valve prolapse","Open mouth","Macrocephaly","Gait disturbance"]}
+];
+const ROLES = ["GP","Genetic counsellor","Lab","IT admin"];
+// which fields each role may see (least privilege)
+const SEE = {
+  "GP": ["name","dob","sex","ins","addr","phone","fam","syms","result","order"],
+  "Genetic counsellor": ["name","dob","sex","phone","fam","syms","result"],
+  "Lab": ["sex","age","syms","test"],
+  "IT admin": []
+};
+const CTRL = [
+  {k:"consent", name:"Consent before genetic processing", what:"No consent on file, no recommendation. Genetic data is special category data.",
+   off:"Recommendations run without consent.", tags:["GDPR Art 9","GDPR Art 7","APPI Art 20(2)","SOC 2 P2.1"]},
+  {k:"deid", name:"Pseudonymise before matching", what:"The matcher only gets a case code, age group, sex and symptom codes. Never name, birth date or insurance number.",
+   off:"Name, birth date and insurance number go to the matcher.", tags:["GDPR Art 5(1)(c)","GDPR Art 25","APPI Art 41","ISO 27001 A.8.11"]},
+  {k:"rbac", name:"Role based access", what:"Each role sees only the fields it needs. Only the GP can order a test.",
+   off:"Every role sees everything and anyone can order.", tags:["SOC 2 CC6.1","SOC 2 CC6.3","ISO 27001 A.5.15","GDPR Art 32"]},
+  {k:"transfer", name:"Cross border transfer check", what:"Sending a sample to an overseas lab needs the patient's separate consent.",
+   off:"Data can go overseas without consent.", tags:["GDPR Ch V (Art 44–49)","APPI Art 28"]},
+  {k:"audit", name:"Tamper evident audit trail", what:"Every view, change and order is logged and chained, so a changed entry shows.",
+   off:"Nothing is logged. No one can show who saw what.", tags:["EU AI Act Art 12","SOC 2 CC7.2","ISO 27001 A.8.15","GDPR Art 5(2)"]},
+  {k:"calib", name:"Calibrated confidence", what:"Clear lead only when the evidence backs it. Otherwise a wider panel and a genetics referral.",
+   off:`Old label: says High on ${Math.round(G.calib.old.share*100)}% of cases, right ${Math.round(G.calib.old.acc*100)}% of the time.`, tags:["EU AI Act Art 15","EU AI Act Art 14","GDPR Art 22"]}
+];
+let S = {p:0, role:"GP", consent:{test:true, overseas:false}, syms:[], ctrl:Object.fromEntries(CTRL.map(c=>[c.k,true])), lab:"local", tab:"ctrl", msg:null};
+let LOG = [], tampered = -1;
+
+const ageOf = dob => { const d=new Date(dob), now=new Date("2026-10-11"); let a=now.getFullYear()-d.getFullYear(); if(now < new Date(now.getFullYear(), d.getMonth(), d.getDate())) a--; return a; };
+const ageGroup = a => a<2?"Infant":a<12?"Child":a<18?"Adolescent":"Adult";
+const pseudo = p => "case-" + sha256("clinic-salt-2026|" + p.ins).slice(0,8);
+
+/* ---------- Audit ---------- */
+function audit(action, detail){
+  if(!S.ctrl.audit) return;
+  const prev = LOG.length ? LOG[LOG.length-1].hash : "0".repeat(64);
+  const t = new Date().toTimeString().slice(0,8);
+  const e = {t, role:S.role, action, detail, prev};
+  e.hash = sha256([e.t,e.role,e.action,e.detail,e.prev].join("|"));
+  LOG.push(e); renderLog();
+}
+function verify(){
+  let prev = "0".repeat(64);
+  for(let i=0;i<LOG.length;i++){ const e=LOG[i]; const h=sha256([e.t,e.role,e.action,e.detail,prev].join("|"));
+    if(e.prev!==prev || h!==e.hash) return i; prev=e.hash; }
+  return -1;
+}
+function renderLog(){
+  const bad = verify();
+  $("#chain").innerHTML = !S.ctrl.audit ? `<span style="color:var(--bad)">Logging is off</span>` : bad<0 ? `<span style="color:var(--ok)">✓ Chain intact · ${LOG.length} entries</span>` : `<span style="color:var(--bad)">✕ Entry ${bad+1} was changed after it was written</span>`;
+  $("#log").innerHTML = LOG.slice().reverse().map((e,j)=>{ const i=LOG.length-1-j;
+    return `<div class="le ${bad>=0&&i>=bad?"broken":""}"><span class="t">${e.t}</span><span class="r">${esc(e.role)}</span><span><b>${esc(e.action)}</b> ${esc(e.detail)}</span><span class="h">${e.hash.slice(0,8)}</span></div>`; }).join("") || `<p class="note">No entries yet.</p>`;
+}
+$("#tamper").onclick = () => { if(LOG.length<2) return; const i = Math.max(0, LOG.length-4); LOG[i].detail = LOG[i].detail + " (edited)"; tampered=i; renderLog(); };
+
+/* ---------- Render ---------- */
+function canSee(f){ return !S.ctrl.rbac || SEE[S.role].includes(f); }
+function field(label, val, key, full){ const ok = canSee(key); return `<div class="f ${ok?"":"hid"} ${full?"full":""}"><span>${label}</span><b>${ok?esc(val):"Hidden for this role"}</b></div>`; }
+
+function renderLeft(){
+  const p = PRESETS[S.p], a = ageOf(p.dob);
+  $("#presets").innerHTML = PRESETS.map((q,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===S.p}">${q.tag}</button>`).join("");
+  $("#roles").innerHTML = ROLES.map(r=>`<button data-r="${r}" aria-pressed="${r===S.role}">${r}</button>`).join("");
+  const showAge = canSee("dob") ? `${p.dob} (${a} yrs)` : canSee("age") ? ageGroup(a) : "";
+  $("#record").innerHTML =
+    field("Name", p.name, "name") + `<div class="f"><span>Case code</span><b style="font-family:var(--mono);font-size:.85rem">${pseudo(p)}</b></div>` +
+    `<div class="f ${canSee("dob")||canSee("age")?"":"hid"}"><span>${canSee("dob")?"Date of birth":"Age group"}</span><b>${showAge||"Hidden for this role"}</b></div>` +
+    field("Sex", p.sex, "sex") + field("Insurance no.", p.ins, "ins") + field("Phone", p.phone, "phone") +
+    field("Address", p.addr, "addr", true) + field("Family history", p.fam, "fam", true);
+  $("#consents").innerHTML =
+    `<button class="tg" data-c="test" aria-pressed="${S.consent.test}">Genetic testing<span class="sw"></span></button>` +
+    `<button class="tg" data-c="overseas" aria-pressed="${S.consent.overseas}">Send to overseas lab<span class="sw"></span></button>`;
+  const vis = canSee("syms");
+  $("#syms").innerHTML = vis ? S.syms.map(i=>`<span class="sym">${esc(G.terms[i])}<button data-x="${i}" aria-label="Remove ${esc(G.terms[i])}">×</button></span>`).join("") || `<p class="note">No symptoms yet.</p>` : `<p class="note">Clinical details are hidden for this role.</p>`;
+  $("#addrow").hidden = !(vis && (S.role==="GP" || !S.ctrl.rbac));
+}
+
+function payload(p){
+  const a = ageOf(p.dob);
+  if(S.ctrl.deid) return `{\n  "case": "${pseudo(p)}",\n  "age_group": "${ageGroup(a)}",\n  "sex": "${p.sex}",\n  "hpo": [${S.syms.map(i=>'"'+G.hpo[i]+'"').join(", ")}]\n}`;
+  return `{\n  <span class="pii">"name": "${p.name}",\n  "dob": "${p.dob}",\n  "insurance": "${p.ins}",\n  "address": "${p.addr}",</span>\n  "sex": "${p.sex}",\n  "hpo": [${S.syms.map(i=>'"'+G.hpo[i]+'"').join(", ")}]\n}`;
+}
+
+function renderOut(){
+  const p = PRESETS[S.p], o = $("#out");
+  if(S.ctrl.rbac && !canSee("result") && !canSee("test")){ o.innerHTML = `<div class="lbl">Recommendation</div><div class="block"><b>No clinical access</b>IT admins manage the system and the audit trail. They never see patient results.</div>`; return; }
+  if(S.ctrl.consent && !S.consent.test){ o.innerHTML = `<div class="lbl">Recommendation</div><div class="block"><b>Blocked: no consent</b>Genetic data is special category data. The patient must consent before it is processed.</div><div class="tags">${["GDPR Art 9","APPI Art 20(2)"].map(t=>`<span class="tag">${t}</span>`).join("")}</div>`; return; }
+  const R = recommend(S.syms, S.ctrl.calib);
+  if(!R){ o.innerHTML = `<div class="lbl">Recommendation</div><p class="note">Add symptoms to get a recommendation.</p>`; return; }
+  const conf = R.clear ? ["Clear lead","var(--ok)"] : ["Uncertain","var(--warn)"];
+  const labOnly = S.ctrl.rbac && !canSee("result");
+  const cands = labOnly ? "" : `<div class="lbl">Top candidates</div><div class="cands">${R.r.map((c,i)=>`<div class="cand"><b>${i+1}. ${esc(c.name)}</b><span class="bar"><i style="width:${Math.min(100,c.score*100)}%"></i></span><small>Explains ${c.m} of ${S.syms.length} symptoms · ${c.genes.length?c.genes.slice(0,4).join(", ")+(c.genes.length>4?"…":""):"no gene recorded"}</small></div>`).join("")}</div>`;
+  const unex = S.syms.filter(i=>!R.lead.matched.includes(i));
+  const canOrder = !S.ctrl.rbac || canSee("order");
+  o.innerHTML = `
+    <div class="lbl">Recommended test</div>
+    <div><div class="big">${R.test}</div>
+      <div class="row" style="margin-top:6px"><span class="pill" style="background:${conf[1]}">${conf[0]}</span>${R.refer?`<span class="note">Also refer to clinical genetics.</span>`:""}</div></div>
+    ${labOnly?"":`<p class="msg" style="font-weight:500">${esc(R.why)}</p>`}
+    <div><div class="lbl" style="margin-bottom:6px">Genes to include</div><div class="genes">${R.genes.map(g=>`<span class="gene">${g}</span>`).join("")}</div></div>
+    ${!labOnly && unex.length?`<p class="note">Not explained by the top candidate: ${unex.map(i=>esc(G.terms[i])).join(", ")}.</p>`:""}
+    ${cands}
+    <details ${S.ctrl.deid?"":"open"}><summary>What the matcher receives</summary><pre class="payload">${payload(p)}</pre></details>
+    <div class="order">
+      <select id="lab" aria-label="Lab"><option value="local" ${S.lab==="local"?"selected":""}>Local lab, Melbourne</option><option value="overseas" ${S.lab==="overseas"?"selected":""}>Partner lab, Germany</option></select>
+      <button class="btn" id="orderbtn" ${canOrder?"":"disabled"}>Order test</button>
+    </div>
+    ${S.msg?`<p class="msg" style="color:${S.msg[1]}">${S.msg[0]}</p>`:canOrder?"":`<p class="note">Only the GP can order.</p>`}`;
+}
+
+function renderCtrls(){
+  $("#ctrls").innerHTML = CTRL.map(c=>{ const on=S.ctrl[c.k];
+    return `<div class="ctrl ${on?"":"off"}"><span class="st" style="background:${on?"var(--ok)":"var(--bad)"}"></span><b>${c.name}</b>
+      <button class="tg" data-k="${c.k}" aria-pressed="${on}" style="width:auto;border:0;padding:0" aria-label="${c.name}"><span class="sw"></span></button>
+      <p>${on?c.what:`<span style="color:var(--bad);font-weight:700">Off: ${c.off}</span>`}</p>
+      <div class="tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div></div>`; }).join("");
+  const off = CTRL.filter(c=>!S.ctrl[c.k]);
+  $("#verdict").innerHTML = off.length ? `<span class="dot" style="background:var(--bad)"></span><span style="color:var(--bad)">No go: ${off.length} safeguard${off.length>1?"s":""} off</span>`
+    : `<span class="dot" style="background:var(--ok)"></span><span>Go, as decision support with GP sign off</span>`;
+}
+
+function renderModel(){
+  const E = G.eval, C = G.calib;
+  const rows = [["3 symptoms","3_0"],["5 symptoms","5_0"],["5 + 1 unrelated","5_1"],["5 + 2 unrelated","5_2"],["8 + 1 unrelated","8_1"]];
+  const cell = v => `<td class="r"><span class="mbar" style="width:${Math.round(v*44)}px;background:${v>=.85?"var(--ok)":v>=.6?"var(--warn)":"var(--bad)"}"></span>${pct(v)}</td>`;
+  $("#evtab").innerHTML = `<tr><th>GP enters</th><th class="r">Right condition first</th><th class="r">In top 5</th><th class="r">Right gene in test</th></tr>` +
+    rows.map(([l,k])=>`<tr><td>${l}</td>${cell(E[k].top1)}${cell(E[k].top5)}${cell(E[k].gene)}</tr>`).join("");
+  $("#ba").innerHTML = `<div><span class="lbl">Before</span><div class="n">${pct(C.old.acc)}</div><span class="note">right when it said High (on ${pct(C.old.share)} of cases)</span></div>
+    <div><span class="lbl">After</span><div class="n" style="color:var(--ok)">${pct(C.new.acc)}</div><span class="note">right when it says Clear lead (on ${pct(C.new.share)} of cases). The rest get a wider panel and a referral.</span></div>`;
+}
+
+function render(){ renderLeft(); renderOut(); renderCtrls(); }
+
+/* ---------- Events ---------- */
+function loadPreset(i){ S.p=i; S.syms=PRESETS[i].syms.map(n=>IX[n]).filter(v=>v!==undefined); S.msg=null; S.consent={test:true, overseas:false}; render();
+  audit("Opened record", pseudo(PRESETS[i])); logRec(); }
+function logRec(){ if(S.ctrl.consent && !S.consent.test) return; const R=recommend(S.syms,S.ctrl.calib); if(R) audit("Recommendation", `${R.test} · ${R.clear?"clear lead":"uncertain"} · ${S.syms.length} symptoms`); }
+$("#presets").onclick = e => { const b=e.target.closest("[data-i]"); if(b) loadPreset(+b.dataset.i); };
+$("#roles").onclick = e => { const b=e.target.closest("[data-r]"); if(!b) return; S.role=b.dataset.r; S.msg=null; render(); audit("Viewed record", pseudo(PRESETS[S.p])); };
+$("#consents").onclick = e => { const b=e.target.closest("[data-c]"); if(!b) return; S.consent[b.dataset.c]=!S.consent[b.dataset.c]; S.msg=null; render();
+  audit("Consent changed", `${b.dataset.c==="test"?"genetic testing":"overseas lab"}: ${S.consent[b.dataset.c]?"yes":"no"}`); };
+$("#syms").onclick = e => { const b=e.target.closest("[data-x]"); if(!b) return; S.syms=S.syms.filter(i=>i!==+b.dataset.x); S.msg=null; render(); audit("Symptom removed", G.hpo[+b.dataset.x]); logRec(); };
+function addSym(){ const v=$("#addin").value.trim(), i=IX[v]; if(i===undefined||S.syms.includes(i)){ $("#addin").select(); return; } S.syms.push(i); $("#addin").value=""; S.msg=null; render(); audit("Symptom added", G.hpo[i]); logRec(); }
+$("#addbtn").onclick = addSym; $("#addin").onkeydown = e => { if(e.key==="Enter") addSym(); };
+$("#out").addEventListener("change", e => { if(e.target.id==="lab"){ S.lab=e.target.value; S.msg=null; renderOut(); } });
+$("#out").addEventListener("click", e => { if(e.target.id!=="orderbtn") return; const R=recommend(S.syms,S.ctrl.calib), p=PRESETS[S.p];
+  if(S.lab==="overseas" && S.ctrl.transfer && !S.consent.overseas){ S.msg=["Blocked: the patient hasn't agreed to send data overseas. Choose the local lab or record consent.","var(--bad)"]; audit("Order blocked", "overseas transfer without consent"); }
+  else { S.msg=[`Ordered: ${R.test} at ${S.lab==="local"?"the local lab":"the partner lab"}. The lab gets ${S.ctrl.deid?"the case code only":"the full identity"}.`, S.ctrl.deid&&(S.lab==="local"||S.consent.overseas)?"var(--ok)":"var(--bad)"]; audit("Test ordered", `${R.test} · ${S.lab} lab · ${R.genes.length} genes`); }
+  renderOut(); });
+$("#ctrls").onclick = e => { const b=e.target.closest("[data-k]"); if(!b) return; const k=b.dataset.k; const was=S.ctrl[k];
+  if(was && k==="audit") audit("Safeguard off", "audit trail");
+  S.ctrl[k]=!was; S.msg=null; render(); renderLog();
+  if(k!=="audit" || !was) audit(S.ctrl[k]?"Safeguard on":"Safeguard off", CTRL.find(c=>c.k===k).name.toLowerCase()); };
+$("#tabs").onclick = e => { const b=e.target.closest("[data-t]"); if(!b) return; S.tab=b.dataset.t;
+  document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  ["ctrl","log","model"].forEach(t=>$("#p-"+t).hidden = t!==S.tab); };
+
+$("#hpolist").innerHTML = G.terms.filter(t=>!/inheritance|onset/i.test(t)).sort().map(t=>`<option value="${esc(t)}">`).join("");
+renderModel(); loadPreset(0);
+</script>

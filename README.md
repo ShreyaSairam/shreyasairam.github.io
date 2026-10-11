@@ -13,7 +13,7 @@ AI, data analytics and energy projects, each with a demo.
 | SignSpeak | Real time ASL letter recognition from a webcam, 95.2% test accuracy. | [Live](https://shreyasairam-projects.streamlit.app/signspeak) |
 | Football Analytics Dashboard | Shot maps, xG, heatmaps and a SQL explorer for France at the 2018 World Cup. | [Live](https://shreyasairam-projects.streamlit.app/football) |
 | WanderWise | Hybrid travel recommender with live weather, location and a Gemini chat panel. | [Live](https://shreyasairam-projects.streamlit.app/wanderwise) |
-| Genetic Testing Decision Support | Symptom to gene matching for GPs with one recommended test. | [Live](https://shreyasairam-projects.streamlit.app/genomics) |
+| Genetic Testing Decision Support | GP tool that recommends a genetic test from symptoms, with consent, pseudonymisation, role based access, overseas transfer checks, a SHA-256 chained audit trail and calibrated confidence. Mapped to GDPR, APPI, EU AI Act, SOC 2 and ISO 27001. | [Try it](genetic-testing/index.html) · [Code](genetic-testing/code) |
 
 The five demo projects are working rebuilds of earlier university and personal projects, made on open datasets. Code: https://github.com/ShreyaSairam/portfolio
 
