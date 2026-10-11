@@ -1,0 +1,402 @@
+<title>Quiet Exits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a full-bleed map of the bank's districts is the stage. A floating console panel on the left, a floating layer bar on top, like a precinct console. Light theme by design. */
+:root{
+  --map:#ECEEEA; --land:#F7F6F2; --border:#FFFFFF; --region:#9AA3AE;
+  --panel:#FFFFFF; --soft:#F3F4F2; --ink:#0F1B2D; --muted:#5D6B7E; --line:#E3E6E8;
+  --r1:#FFF1D6; --r2:#F8C46A; --r3:#EE8442; --r4:#C9432E;
+  --safe:#129B84; --pick:#4F5BD5; --leak:#D9483B;
+  --ui:"Plus Jakarta Sans","Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--map);color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.45;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+
+/* map */
+#stage{position:fixed;inset:0;}
+#map{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#map.drag{cursor:grabbing}
+.dist{stroke:var(--border);stroke-width:.8;vector-effect:non-scaling-stroke;transition:fill .35s}
+.dist:hover{stroke:var(--ink);stroke-width:1.6}
+.dist.sel{stroke:var(--ink);stroke-width:2.4}
+.reg{fill:none;stroke:var(--region);stroke-width:1.3;vector-effect:non-scaling-stroke;pointer-events:none}
+.city{font-family:var(--ui);font-weight:700;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-linejoin:round;pointer-events:none}
+.dot{pointer-events:none}
+
+/* floating chrome */
+.card{background:var(--panel);border-radius:22px;box-shadow:0 10px 40px rgba(15,27,45,.12),0 1px 3px rgba(15,27,45,.08)}
+.side{position:fixed;left:16px;top:16px;bottom:16px;width:410px;display:flex;flex-direction:column;overflow:hidden;z-index:3}
+.head{display:flex;gap:12px;align-items:center;padding:18px 18px 12px}
+.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(145deg,#FFE7B8,#F8C46A);display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(15,27,45,.06)}
+.head h1{margin:0;font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
+.head p{margin:0;color:var(--muted);font-size:.86rem}
+.head .home{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-weight:600;font-size:.82rem;text-decoration:none;color:var(--ink)}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin:0 12px;padding:4px;background:var(--soft);border-radius:16px}
+.tab{border:0;background:transparent;border-radius:12px;padding:8px 2px 6px;display:grid;justify-items:center;gap:3px;color:var(--muted);font-size:.74rem;font-weight:600}
+.tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(15,27,45,.12)}
+.body{flex:1;overflow-y:auto;padding:14px 18px 18px;display:grid;gap:14px;align-content:start}
+.lede{font-size:.95rem;color:var(--ink);margin:0}
+.lede b{font-weight:700}
+.hint{color:var(--muted);font-size:.82rem;margin:0}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--soft);border-radius:16px;padding:12px 14px;display:grid;gap:2px}
+.kpi b{font-size:1.45rem;font-weight:800;letter-spacing:-.02em}
+.kpi span{font-size:.78rem;color:var(--muted)}
+.box{border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px}
+.box h3{margin:0;font-size:.92rem;font-weight:700}
+.rowlist{display:grid;gap:2px}
+.rowi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;border:0;background:transparent;text-align:left;padding:8px;border-radius:12px}
+.rowi:hover{background:var(--soft)}
+.rowi[aria-selected="true"]{background:#EEF0FF}
+.rowi .t{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowi .s{font-size:.76rem;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowi .v{font-family:var(--mono);font-size:.8rem;text-align:right}
+.sw{width:10px;height:28px;border-radius:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:.78rem;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.seg{display:flex;background:var(--soft);border-radius:14px;padding:4px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;border-radius:10px;padding:8px 6px;font-weight:600;font-size:.82rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(15,27,45,.12)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.sl{display:grid;gap:4px}
+.sl .h{display:flex;justify-content:space-between;font-size:.84rem}
+.sl .h b{font-family:var(--mono)}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.why{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.why li{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.86rem}
+.why li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--r3);margin-top:.5em}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px}
+.tag.leak{background:#FBE3DF;color:var(--leak)}.tag.ok{background:#DDF3EE;color:var(--safe)}.tag.flag{background:#EEF0FF;color:var(--pick)}.tag.warn{background:#FFF1D6;color:#9A5B00}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:.72rem}
+td.r,th.r{text-align:right}
+.steps{display:grid;gap:8px;counter-reset:s}
+.step{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.step i{width:28px;height:28px;border-radius:9px;background:var(--soft);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:.8rem}
+.step b{display:block}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{font-weight:600;font-size:.82rem;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;text-decoration:none}
+
+/* layer bar */
+.layers{position:fixed;top:16px;left:442px;right:16px;z-index:2;padding:10px 12px;display:grid;gap:8px}
+.lrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lseg{display:flex;gap:2px;background:var(--soft);border-radius:14px;padding:3px}
+.lseg button{border:0;background:transparent;border-radius:11px;padding:7px 14px;font-weight:700;color:var(--muted)}
+.lseg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(15,27,45,.12)}
+.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-weight:700;font-size:.84rem;color:var(--muted)}
+.pill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.grad{display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--muted)}
+.grad .bar{flex:1;height:8px;border-radius:4px;max-width:420px}
+.tip{position:fixed;z-index:5;pointer-events:none;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(15,27,45,.18);padding:10px 12px;font-size:.82rem;display:grid;gap:3px;min-width:180px}
+.tip b{font-size:.92rem}
+.zoom{position:fixed;right:16px;bottom:16px;z-index:2;display:grid;gap:6px}
+.zoom button{width:40px;height:40px;border-radius:12px;border:0;background:#fff;box-shadow:0 4px 14px rgba(15,27,45,.14);font-size:1.2rem;font-weight:700}
+.credit{position:fixed;right:68px;bottom:22px;z-index:1;font-size:.72rem;color:var(--muted)}
+
+@media (max-width:900px){
+  body{overflow:auto}
+  #stage{position:relative;height:auto;display:flex;flex-direction:column}
+  #map{height:42vh;order:2}
+  .layers{position:relative;left:auto;right:auto;top:auto;margin:10px 10px 0;order:1}
+  .side{position:relative;left:auto;top:auto;bottom:auto;width:auto;margin:10px;max-height:none}
+  .zoom{position:absolute;top:auto;bottom:10px;right:10px;grid-auto-flow:column}
+  .credit{display:none}
+  .lseg button{padding:6px 9px;font-size:.8rem}.pill{padding:6px 10px;font-size:.78rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="stage">
+  <svg id="map" role="img" aria-label="Map of the bank's districts in the Czech Republic, coloured by the selected layer"></svg>
+  <div class="layers card" id="layers">
+    <div class="lrow">
+      <div class="lseg" role="group" aria-label="Map layer" id="lyr">
+        <button data-l="risk" aria-pressed="true">Money at risk</button>
+        <button data-l="flag" aria-pressed="false">Flagged</button>
+        <button data-l="leak" aria-pressed="false">Leaked</button>
+        <button data-l="off" aria-pressed="false">Off</button>
+      </div>
+      <button class="pill" id="p-acc" aria-pressed="true">Accounts</button>
+      <button class="pill" id="p-reg" aria-pressed="true">Regions</button>
+      <button class="pill" id="p-lab" aria-pressed="true">Cities</button>
+      <button class="pill" id="p-rev" aria-pressed="false">Reveal Oct to Dec</button>
+    </div>
+    <div class="grad"><span id="g-lo">Low</span><span class="bar" id="g-bar"></span><span id="g-hi">High</span><span id="g-note" class="mono"></span></div>
+  </div>
+  <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zre" aria-label="Reset view">⟲</button></div>
+  <div class="credit">District boundaries: ČÚZK INSPIRE via siwekm/czech-geojson (CC BY 4.0)</div>
+</div>
+
+<aside class="side card" aria-label="Console">
+  <div class="head">
+    <div class="logo" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0F1B2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-5 8 5"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8M4 20h16"/><path d="M12 14v6" stroke="#C9432E"/></svg></div>
+    <div><h1>Quiet Exits</h1><p>Retention Console · Czech bank, Sep 1998</p></div>
+    <a class="home" href="../">Portfolio</a>
+  </div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="body" id="body"></div>
+</aside>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const D = /*__CONSOLE__*/null;
+const TREES = /*__MODEL__*/null;
+const $ = s => document.querySelector(s);
+const NS = "http://www.w3.org/2000/svg";
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const czk = n => n >= 1e6 ? (n/1e6).toFixed(2)+"M" : n >= 1e3 ? Math.round(n/1e3)+"k" : Math.round(n)+"";
+const pct = (v,d=0) => (v*100).toFixed(d)+"%";
+const DIST = new Map(D.districts.map(d=>[d.id,d]));
+const A = D.accts;
+function predict(x){let s=0;for(const t of TREES){const f=t[0],th=t[1],l=t[2],r=t[3],v=t[4];let i=0;while(f[i]>=0){i=(x[f[i]]<=th[i])?l[i]:r[i];}s+=v[i];}return 1/(1+Math.exp(-s));}
+
+/* ---------------- state */
+let layer="risk", showAcc=true, showReg=true, showLab=true, reveal=false, tab="overview", selD=null, selA=null, budget=300, strat="model", sigF=-1;
+const SIGCOL = ["#9A5B00","#C9432E","#EE8442","#4F5BD5","#5D6B7E"];
+const SIGSHORT = ["Financial stress","Cash withdrawals","Income slowed","Moving to other bank","Balance sliding"];
+
+/* ---------------- map */
+const svg = $("#map");
+function homeVB(){ const desk = innerWidth > 900, padL = desk ? 440 : 0, padT = desk ? 110 : 0;
+  const aw = Math.max(200, innerWidth - padL - 30), ah = Math.max(200, (desk?innerHeight:(svg.clientHeight||innerHeight*0.42)) - padT - 20);
+  const s = Math.max((D.w+40)/aw, (D.h+40)/ah);
+  const W = (desk?innerWidth:aw+30)*s, H = (desk?innerHeight:ah+20)*s;
+  return {x: -20 - (padL + (aw - (D.w+40)/s)/2)*s, y: -20 - (padT + (ah - (D.h+40)/s)/2)*s, w: W, h: H}; }
+let vb = homeVB(); HOMEW = vb.w;
+const gD = document.createElementNS(NS,"g"), gR = document.createElementNS(NS,"g"), gA = document.createElementNS(NS,"g"), gL = document.createElementNS(NS,"g");
+svg.append(gD, gR, gA, gL);
+D.districts.forEach(d=>{ const p=document.createElementNS(NS,"path"); p.setAttribute("d",d.d); p.setAttribute("class","dist"); p.dataset.id=d.id; d.el=p; gD.append(p); });
+D.regions.forEach(r=>{ const p=document.createElementNS(NS,"path"); p.setAttribute("d",r.d); p.setAttribute("class","reg"); gR.append(p); });
+const CITIES = ["Praha","Brno-město","Ostrava-město","Plzeň-město","Olomouc","Liberec","České Budějovice","Hradec Králové","Ústí nad Labem","Pardubice","Zlín","Jihlava","Karlovy Vary"];
+D.districts.filter(d=>CITIES.includes(d.name)).forEach(d=>{ const t=document.createElementNS(NS,"text"); t.setAttribute("x",d.cx); t.setAttribute("y",d.cy); t.setAttribute("text-anchor","middle"); t.setAttribute("class","city"); t.setAttribute("font-size","13"); t.textContent=d.name.replace("-město",""); gL.append(t); });
+// account dots: deterministic jitter inside a disc around the district point
+let seed=11; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const byD = {}; A.forEach(a=>{ (byD[a.d] ||= []).push(a); });
+Object.entries(byD).forEach(([id,list])=>{ const d=DIST.get(+id); const R=Math.min(22, 4+Math.sqrt(list.length)*1.6); list.forEach(a=>{ const ang=rnd()*Math.PI*2, rr=Math.sqrt(rnd())*R; a.mx=d.cx+Math.cos(ang)*rr; a.my=d.cy+Math.sin(ang)*rr; }); });
+var HOMEW;
+function zk(){ return HOMEW ? vb.w/HOMEW : 1; }
+function setVB(){ svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); const k=zk();
+  gL.querySelectorAll("text").forEach(t=>{ t.setAttribute("font-size",(13*k).toFixed(2)); t.style.strokeWidth=(3*k)+"px"; });
+  gA.querySelectorAll("circle").forEach(c=>c.setAttribute("r",(+c.dataset.r*k).toFixed(2))); }
+setVB();
+
+/* colour ramps */
+const RAMP = { risk:["#FFF1D6","#F8C46A","#EE8442","#C9432E"], flag:["#EEF0FF","#B7BDF2","#7C86E4","#3E47B8"], leak:["#FDECE9","#F3A79C","#E2685A","#B12E22"] };
+function lerp(a,b,t){ const p=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16)); const A1=p(a),B1=p(b); return "#"+A1.map((v,i)=>Math.round(v+(B1[i]-v)*t).toString(16).padStart(2,"0")).join(""); }
+function ramp(stops,t){ t=Math.max(0,Math.min(1,t)); const k=(stops.length-1)*t, i=Math.min(stops.length-2,Math.floor(k)); return lerp(stops[i],stops[i+1],k-i); }
+function metric(d){ if(layer==="risk") return d.risk; if(layer==="flag") return d.flagged/Math.max(1,d.n); return reveal ? d.lost : 0; }
+function paintMap(){
+  const vals = D.districts.map(metric), mx = Math.max(...vals, 1);
+  D.districts.forEach(d=>{ const v=metric(d); d.el.style.fill = layer==="off" || (layer==="leak" && !reveal) ? "var(--land)" : ramp(RAMP[layer], Math.sqrt(v/mx)); d.el.classList.toggle("sel", selD===d.id); });
+  gR.style.display = showReg?"":"none"; gL.style.display = showLab?"":"none";
+  // gradient legend
+  const st = RAMP[layer==="off"?"risk":layer];
+  $("#g-bar").style.background = layer==="off" ? "var(--line)" : `linear-gradient(90deg,${st.join(",")})`;
+  $("#g-lo").textContent = "Low"; $("#g-hi").textContent = "High";
+  $("#g-note").textContent = layer==="risk" ? `Money at risk, next 3 months · ${czk(D.kpi.risk)} CZK total` : layer==="flag" ? `Share of accounts flagged · top ${fmt(D.flagN)} by the model` : layer==="leak" ? (reveal ? `Money that left Oct to Dec · ${czk(D.kpi.lost)} CZK` : "Turn on Reveal to see what happened") : "";
+  paintDots();
+}
+function chosen(){ const key = strat==="model" ? "rk" : strat==="rich" ? "rr" : "rnd"; return a => a[key] <= budget; }
+A.forEach((a,i)=>{ a.rnd = 0; }); (()=>{ seed=99; const o=A.map((_,i)=>i); for(let i=o.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1)); [o[i],o[j]]=[o[j],o[i]];} o.forEach((ai,k)=>A[ai].rnd=k+1); })();
+function paintDots(){
+  gA.innerHTML = ""; if(!showAcc) return;
+  const isChosen = tab==="optimise" ? chosen() : (a=>a.flag);
+  const frag = document.createDocumentFragment();
+  A.forEach(a=>{
+    const on = isChosen(a); if(!on && !(reveal && a.leak)) return;
+    if(selD && a.d!==selD && tab!=="optimise") return;
+    const c=document.createElementNS(NS,"circle"); c.setAttribute("cx",a.mx.toFixed(1)); c.setAttribute("cy",a.my.toFixed(1)); c.dataset.r = a.id===selA ? 4.2 : 2.4; c.setAttribute("r", (c.dataset.r*zk()).toFixed(2)); c.setAttribute("class","dot");
+    const col = reveal ? (a.leak ? (on ? "#129B84" : "#D9483B") : "#4F5BD5") : "#0F1B2D";
+    c.setAttribute("fill", col); c.setAttribute("fill-opacity", reveal && !on ? .9 : .85); c.setAttribute("stroke","#fff"); c.setAttribute("stroke-width",".6");
+    frag.append(c);
+  });
+  gA.append(frag);
+}
+
+/* pan + zoom */
+function zoom(f, cx, cy){ const nx = cx - (cx-vb.x)*f, ny = cy - (cy-vb.y)*f; vb = {x:nx, y:ny, w:vb.w*f, h:vb.h*f}; setVB(); }
+function svgPt(ev){ const r=svg.getBoundingClientRect(); const s=Math.max(vb.w/r.width, vb.h/r.height); const ox=(r.width*s-vb.w)/2, oy=(r.height*s-vb.h)/2; return {x: vb.x + (ev.clientX-r.left)*s - ox, y: vb.y + (ev.clientY-r.top)*s - oy, s}; }
+svg.addEventListener("wheel", ev=>{ ev.preventDefault(); const p=svgPt(ev); zoom(ev.deltaY>0?1.15:1/1.15, p.x, p.y); }, {passive:false});
+let drag=null;
+svg.addEventListener("pointerdown", ev=>{ drag={x:ev.clientX,y:ev.clientY,vb:{...vb},moved:false}; svg.setPointerCapture(ev.pointerId); });
+svg.addEventListener("pointermove", ev=>{
+  if(drag){ const r=svg.getBoundingClientRect(); const s=Math.max(vb.w/r.width, vb.h/r.height); const dx=(ev.clientX-drag.x)*s, dy=(ev.clientY-drag.y)*s; if(Math.abs(dx)+Math.abs(dy)>3){drag.moved=true; svg.classList.add("drag");} vb={...drag.vb, x:drag.vb.x-dx, y:drag.vb.y-dy}; setVB(); $("#tip").hidden=true; return; }
+  const t = ev.target.closest(".dist"); if(!t){ $("#tip").hidden=true; return; }
+  const d = DIST.get(+t.dataset.id); const tip=$("#tip");
+  tip.innerHTML = `<b>${d.name}</b><span style="color:var(--muted)">${d.region} · ${fmt(d.n)} accounts</span><span>At risk <b class="mono">${czk(d.risk)} CZK</b></span><span>Flagged <b class="mono">${d.flagged}</b>${reveal?` · Leaked <b class="mono">${d.leak}</b>`:""}</span>`;
+  tip.hidden=false; tip.style.left=Math.min(innerWidth-tip.offsetWidth-10, ev.clientX+14)+"px"; tip.style.top=(ev.clientY+14)+"px";
+});
+svg.addEventListener("pointerup", ev=>{ svg.classList.remove("drag"); const moved = drag && drag.moved; drag=null; if(moved) return;
+  const t = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".dist"); if(!t) return; pickDistrict(+t.dataset.id); });
+svg.addEventListener("pointerleave", ()=>{ $("#tip").hidden=true; });
+$("#zin").onclick=()=>zoom(1/1.3, vb.x+vb.w/2, vb.y+vb.h/2); $("#zout").onclick=()=>zoom(1.3, vb.x+vb.w/2, vb.y+vb.h/2);
+$("#zre").onclick=()=>{ vb=homeVB(); HOMEW=vb.w; setVB(); selD=null; paintMap(); render(); };
+function flyTo(d){ const h0=homeVB(), f=0.38; const w=h0.w*f, h=h0.h*f; const cx = innerWidth>900 ? (440+(innerWidth-440)/2)/innerWidth : .5, cy = innerWidth>900 ? (110+(innerHeight-110)/2)/innerHeight : .55; vb={x:d.cx-w*cx, y:d.cy-h*cy, w, h}; setVB(); }
+function pickDistrict(id){ selD = selD===id ? null : id; if(selD){ flyTo(DIST.get(id)); if(tab!=="optimise"){ tab="accounts"; } } paintMap(); render(); }
+
+/* layer bar */
+$("#lyr").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; layer=b.dataset.l; document.querySelectorAll("#lyr button").forEach(x=>x.setAttribute("aria-pressed", x===b)); if(layer==="leak" && !reveal){ reveal=true; $("#p-rev").setAttribute("aria-pressed",true); } paintMap(); render(); });
+const pills = {"#p-acc":()=>showAcc=!showAcc, "#p-reg":()=>showReg=!showReg, "#p-lab":()=>showLab=!showLab, "#p-rev":()=>reveal=!reveal};
+Object.entries(pills).forEach(([id,fn])=>$(id).addEventListener("click",e=>{ const v=fn(); e.currentTarget.setAttribute("aria-pressed", v); paintMap(); render(); }));
+
+/* ---------------- panel */
+const ICON = {
+  overview:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  accounts:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c.8-3.5 3.3-5.5 6-5.5s5.2 2 6 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>',
+  optimise:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  whatif:'<svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  model:'<svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V7z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
+  limits:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>'};
+const TABS = [["overview","Overview"],["accounts","Accounts"],["optimise","Optimise"],["whatif","What-if"],["model","Model"],["limits","Limits"]];
+$("#tabs").innerHTML = TABS.map(([k,l])=>`<button class="tab" role="tab" data-t="${k}" aria-selected="${k===tab}">${ICON[k]}<span>${l}</span></button>`).join("");
+$("#tabs").addEventListener("click", e=>{ const b=e.target.closest(".tab"); if(!b) return; tab=b.dataset.t; paintMap(); render(); });
+
+function spark(a, w=360, h=90){
+  const H=a.h, n=H.length; if(!n) return "";
+  const known = 12, mx=Math.max(...H, a.usual)*1.08, X=i=>i/(n-1)*w, Y=v=>h-6-(v/mx)*(h-12);
+  const pts = arr => arr.map(([i,v])=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const k = Math.min(known, n);
+  const before = H.slice(0,k).map((v,i)=>[i,v]), after = reveal ? H.slice(k-1).map((v,i)=>[i+k-1,v]) : [];
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" aria-hidden="true">
+    <line x1="0" x2="${w}" y1="${Y(a.usual)}" y2="${Y(a.usual)}" stroke="#C7CDD3" stroke-dasharray="3 3"/>
+    <line x1="${X(k-1)}" x2="${X(k-1)}" y1="0" y2="${h}" stroke="#F8C46A" stroke-width="1.5"/>
+    <text x="${X(k-1)-4}" y="11" text-anchor="end" font-size="10" fill="#9A5B00" font-family="IBM Plex Mono">Today</text>
+    <polyline points="${pts(before)}" fill="none" stroke="#0F1B2D" stroke-width="2"/>
+    ${after.length?`<polyline points="${pts(after)}" fill="none" stroke="${a.leak?"#D9483B":"#129B84"}" stroke-width="2.2" stroke-dasharray="4 3"/>`:""}
+  </svg>`;
+}
+const accLabel = a => `Account ${a.id}`;
+function accRow(a){ const d=DIST.get(a.d); return `<button class="rowi" data-a="${a.id}" aria-selected="${a.id===selA}"><span class="sw" style="background:${SIGCOL[a.s]}"></span><span style="min-width:0"><span class="t">${accLabel(a)} · ${a.g==="F"?"F":"M"}${a.age}</span><span class="s">${d.name} · ${SIGSHORT[a.s]}</span></span><span class="v">${czk(a.risk)}<br><span style="color:var(--muted)">${pct(a.p)}</span></span></button>`; }
+
+function render(){
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected", b.dataset.t===tab));
+  const B = $("#body"), K = D.kpi, M = D.model.test;
+  if(tab==="overview"){
+    const top = [...D.districts].sort((a,b)=>b.risk-a.risk).slice(0,6);
+    B.innerHTML = `
+      <p class="lede">Customers rarely close accounts. They <b>drain them</b>. This console spots the slide early and shows where to act first.</p>
+      <div class="kpis">
+        <div class="kpi"><b class="num">${czk(K.risk)}</b><span>CZK at risk, next 3 months</span></div>
+        <div class="kpi"><b class="num">${fmt(K.flagged)}</b><span>accounts flagged of ${fmt(K.n)}</span></div>
+        <div class="kpi"><b class="num">${reveal?czk(K.lost):"Hidden"}</b><span>${reveal?`left Oct to Dec · ${K.leak} accounts`:"what really left · reveal on the map"}</span></div>
+        <div class="kpi"><b class="num">${pct(M.recall_top10)}</b><span>of drifters caught in the top 10%</span></div>
+      </div>
+      <div class="box"><h3>Where the money is at risk</h3><div class="rowlist">${top.map(d=>`<button class="rowi" data-d="${d.id}"><span class="sw" style="background:${ramp(RAMP.risk, Math.sqrt(d.risk/top[0].risk))}"></span><span style="min-width:0"><span class="t">${d.name}</span><span class="s">${d.region} · ${d.flagged} flagged</span></span><span class="v">${czk(d.risk)}</span></button>`).join("")}</div></div>
+      <div class="box"><h3>The slide starts early</h3>${eventChart()}<p class="hint">Balance of accounts that drifted vs stayed, months before and after the bank could see it.</p></div>
+      <div class="links"><a href="story.html">The story</a><a href="report.html">Full technical report</a><a href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></div>`;
+  }
+  if(tab==="accounts"){
+    let list = A.filter(a=>a.flag && (!selD || a.d===selD) && (sigF<0 || a.s===sigF));
+    const a = A.find(x=>x.id===selA);
+    B.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><p class="lede"><b>${selD?DIST.get(selD).name:"All districts"}</b> · ${list.length} flagged</p>${selD?`<button class="chip" id="clrD">Clear</button>`:""}</div>
+      <div class="chips" id="sigs"><button class="chip" data-s="-1" aria-pressed="${sigF<0}">All signals</button>${SIGSHORT.map((s,i)=>`<button class="chip" data-s="${i}" aria-pressed="${sigF===i}">${s}</button>`).join("")}</div>
+      ${a ? `<div class="box">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3>${accLabel(a)}</h3><p class="hint">${DIST.get(a.d).name} · ${a.g==="F"?"Woman":"Man"}, ${a.age} · usual ${czk(a.usual)} CZK</p></div><span class="tag ${reveal?(a.leak?"leak":"ok"):"flag"}">${reveal?(a.leak?"Leaked":"Stayed"):pct(a.p)+" risk"}</span></div>
+        ${spark(a)}
+        ${a.why?`<ul class="why">${a.why.map(w=>`<li>${w}</li>`).join("")}</ul>`:""}
+        <div class="tag ${a.s===0?"warn":"flag"}" style="justify-self:start">${a.s===0?"Lead with support, not a sales offer":"Suggested: early check-in"}</div>
+        ${a.x?`<button class="btn ghost" id="toWhatIf">Open in What-if</button>`:""}
+      </div>`:`<p class="hint">Pick an account to see its balance and why it was flagged. Click a district on the map to filter.</p>`}
+      <div class="rowlist">${list.slice(0,60).map(accRow).join("")}</div>
+      ${list.length>60?`<p class="hint">Showing the top 60 by money at risk.</p>`:""}`;
+    $("#clrD")?.addEventListener("click",()=>{ selD=null; paintMap(); render(); });
+    $("#sigs").addEventListener("click",e=>{ const c=e.target.closest(".chip"); if(c){ sigF=+c.dataset.s; render(); }});
+    $("#toWhatIf")?.addEventListener("click",()=>{ tab="whatif"; render(); });
+  }
+  if(tab==="optimise"){
+    const sel = chosen(); const got = A.filter(a=>sel(a)); const m = got.reduce((s,a)=>s+(a.leak?a.lost:0),0), p = got.filter(a=>a.leak).length;
+    const res = ["model","rich","rnd"].map(k=>{ const key=k==="model"?"rk":k==="rich"?"rr":"rnd"; const g=A.filter(a=>a[key]<=budget); return [k, g.reduce((s,a)=>s+(a.leak?a.lost:0),0)]; });
+    const mx = Math.max(...res.map(r=>r[1]),1); const NAME={model:"Warning signs",rich:"Richest first",rnd:"Random"};
+    B.innerHTML = `
+      <p class="lede">A team can only contact so many people. <b>Who should they reach first?</b></p>
+      <div class="seg" id="strat"><button data-k="model" aria-pressed="${strat==="model"}">Warning signs</button><button data-k="rich" aria-pressed="${strat==="rich"}">Richest first</button><button data-k="rnd" aria-pressed="${strat==="rnd"}">Random</button></div>
+      <div class="sl"><div class="h"><label for="bud">Contacts this quarter</label><b id="budv">${budget}</b></div><input type="range" id="bud" min="50" max="1000" step="50" value="${budget}"></div>
+      <div class="kpis"><div class="kpi"><b class="num" style="color:var(--safe)">${czk(m)}</b><span>CZK of leaking money reached</span></div><div class="kpi"><b class="num">${p}<span style="font-size:.9rem;color:var(--muted)">/${D.kpi.leak}</span></b><span>leaking accounts reached</span></div></div>
+      <div class="box"><h3>Same budget, three strategies</h3>${res.map(([k,v])=>`<div style="display:grid;grid-template-columns:7.5rem 1fr 4rem;gap:8px;align-items:center;font-size:.84rem"><span style="font-weight:${k===strat?700:500}">${NAME[k]}</span><span style="height:10px;background:var(--soft);border-radius:5px;overflow:hidden"><span style="display:block;height:100%;width:${(v/mx*100).toFixed(1)}%;background:${k==="model"?"#0F1B2D":"#B8C0C8"};border-radius:5px"></span></span><span class="mono" style="text-align:right">${czk(v)}</span></div>`).join("")}
+      <p class="hint">Measured on what really happened Oct to Dec 1998. Turn on Reveal: green dots were reached, red were missed.</p></div>
+      <div class="box"><h3>Where extra contacts stop paying off</h3>${curveChart()}</div>`;
+    $("#strat").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; strat=b.dataset.k; paintMap(); render(); });
+    $("#bud").addEventListener("input",e=>{ budget=+e.target.value; paintMap(); render(); $("#bud").focus(); });
+  }
+  if(tab==="whatif"){
+    let a = A.find(x=>x.id===selA && x.x) || A[0];
+    selA = a.id;
+    const LV = [["balance_vs_peak","Balance vs its 12-month high",0.1,1.3,0.05,v=>pct(v)],["balance_trend","Balance trend, last 3 vs previous 3",0.2,1.6,0.05,v=>pct(v)],["cash_share","Share taken out as cash",0,1,0.05,v=>pct(v)],["income_change","Income vs previous 3 months",0,2,0.05,v=>pct(v)],["months_since_credit","Months since money came in",0,6,1,v=>v.toFixed(0)]];
+    const fi = f=>D.features.indexOf(f); const x=a.x.slice();
+    B.innerHTML = `
+      <p class="lede">Move a signal and the <b>live model</b> rescores ${accLabel(a)}.</p>
+      <div class="box"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3>${accLabel(a)}</h3><span class="hint">${DIST.get(a.d).name}</span></div>
+        <div style="display:flex;align-items:baseline;gap:10px"><b id="wp" style="font-size:2.2rem;font-weight:800" class="num">${pct(a.p)}</b><span id="wd" class="hint">chance of drifting, as scored</span></div>
+        ${LV.map(([f,l,mn,mx,st,fm])=>{ const v=Math.min(mx,Math.max(mn,a.x[fi(f)])); return `<div class="sl"><div class="h"><label for="w-${f}">${l}</label><b id="o-${f}">${fm(v)}</b></div><input type="range" id="w-${f}" data-f="${f}" min="${mn}" max="${mx}" step="${st}" value="${v}"></div>`; }).join("")}
+        <button class="btn ghost" id="wreset">Reset</button></div>
+      <p class="hint">This shows what the model reacts to. It doesn't prove that changing one thing would make a customer stay.</p>
+      <div class="box"><h3>Try another account</h3><div class="rowlist">${A.filter(z=>z.x && (!selD || z.d===selD)).slice(0,12).map(accRow).join("")}</div></div>`;
+    LV.forEach(([f,,,,,fm])=>$("#w-"+f).addEventListener("input",e=>{ x[fi(f)]=+e.target.value; $("#o-"+f).textContent=fm(+e.target.value); const p=predict(x); $("#wp").textContent=pct(p); const d=p-a.p; $("#wd").textContent=Math.abs(d)<.005?"chance of drifting, unchanged":`chance of drifting, ${d>0?"up":"down"} ${pct(Math.abs(d))} points`; }));
+    $("#wreset").onclick = render;
+  }
+  if(tab==="model"){
+    const F = D.fairness, rows=[...F.gender, ...F.age];
+    B.innerHTML = `
+      <p class="lede">Tested like a bank would: trained on <b>Jan 1994 to Jun 1997</b>, scored on months it never saw.</p>
+      <div class="kpis">
+        <div class="kpi"><b class="num">${M.auc.toFixed(2)}</b><span>AUC on unseen months · baseline ${M.auc_baseline.toFixed(2)}</span></div>
+        <div class="kpi"><b class="num">${M.lift_top10.toFixed(1)}×</b><span>better than random in the top 10%</span></div>
+      </div>
+      <div class="box"><h3>Fairness</h3><p class="hint">Gender and age are left out of the model, then checked.</p>
+        <table><tr><th>Group</th><th class="r">Drifted</th><th class="r">Flagged</th><th class="r">Caught</th></tr>${rows.map(r=>`<tr><td>${r.group}</td><td class="r mono">${pct(r.actual_drift,1)}</td><td class="r mono">${pct(r.flagged,1)}</td><td class="r mono">${r.caught==null?"–":pct(r.caught)}</td></tr>`).join("")}</table></div>
+      <div class="box"><h3>Drift monitor</h3><p class="hint">Is today's data still like the training data? PSI over 0.25 needs action.</p>
+        <table>${D.psi.map(r=>`<tr><td>${r.label}</td><td class="r"><span class="tag ${r.psi>.25?"leak":r.psi>.1?"warn":"ok"}">${r.psi.toFixed(2)}</span></td></tr>`).join("")}<tr><td><b>Model score</b></td><td class="r"><span class="tag ${D.score_psi>.1?"warn":"ok"}">${D.score_psi.toFixed(2)}</span></td></tr></table></div>
+      <div class="box"><h3>Pipeline</h3><div class="steps">
+        <div class="step"><i>1</i><span><b>SQL</b><span class="hint">${fmt(D.kpi.trans)} transactions to one row per account per month (DuckDB)</span></span></div>
+        <div class="step"><i>2</i><span><b>Features</b><span class="hint">23 signals: balance trend, cash share, income change and more</span></span></div>
+        <div class="step"><i>3</i><span><b>Model</b><span class="hint">LightGBM, out-of-time test, SHAP explanations</span></span></div>
+        <div class="step"><i>4</i><span><b>Governance</b><span class="hint">Fairness by group, drift monitoring, model card</span></span></div></div></div>
+      <div class="links"><a href="report.html">Full technical report</a><a href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></div>`;
+  }
+  if(tab==="limits"){
+    B.innerHTML = `
+      <p class="lede">What this <b>can't</b> tell you.</p>
+      <div class="steps">
+        <div class="step"><i>!</i><span><b>Old data, one country</b><span class="hint">A Czech bank, 1993 to 1998. The method transfers; the numbers won't.</span></span></div>
+        <div class="step"><i>!</i><span><b>No record of contacts</b><span class="hint">It predicts who drifts, not whether reaching out keeps them. That needs a test with a control group.</span></span></div>
+        <div class="step"><i>!</i><span><b>A chosen definition</b><span class="hint">"Drifting" means the next 3 months fall below 70% of the usual balance. Other cut-offs change who is flagged.</span></span></div>
+        <div class="step"><i>!</i><span><b>Stand-ins for age</b><span class="hint">Age is left out, but pension income stands in for it. Over-60s are flagged less because they drift less.</span></span></div>
+        <div class="step"><i>!</i><span><b>A tool, not a decision</b><span class="hint">It ranks who to look at. People decide what to do, and stressed customers get support, not sales.</span></span></div>
+      </div>
+      <div class="links"><a href="report.html">Full technical report</a><a href="story.html">The story</a></div>`;
+  }
+  B.querySelectorAll("[data-a]").forEach(el=>el.addEventListener("click",()=>{ selA=+el.dataset.a; const a=A.find(x=>x.id===selA); if(tab==="overview") tab="accounts"; paintDots(); render(); }));
+  B.querySelectorAll("[data-d]").forEach(el=>el.addEventListener("click",()=>pickDistrict(+el.dataset.d)));
+}
+function eventChart(){
+  const E=D.event, w=360, h=120, X=i=>i/(E.months.length-1)*w, Y=v=>h-14-(v-.4)/(.85)*(h-24);
+  const line=(arr,col,dash)=>`<polyline points="${arr.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2.2" ${dash?'stroke-dasharray="4 3"':''}/>`;
+  const ti=E.months.indexOf(0);
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" aria-hidden="true"><line x1="${X(ti)}" x2="${X(ti)}" y1="0" y2="${h-14}" stroke="#F8C46A" stroke-width="1.5"/>${line(E.stable,"#9AA3AE",true)}${line(E.drift,"#C9432E")}<text x="${X(ti)+4}" y="10" font-size="10" fill="#9A5B00" font-family="IBM Plex Mono">Today</text>${E.months.map((m,i)=>i%3===0?`<text x="${X(i)}" y="${h-2}" font-size="9" fill="#5D6B7E" text-anchor="${i===0?"start":i===E.months.length-1?"end":"middle"}" font-family="IBM Plex Mono">${m===0?"today":(m>0?"+":"")+m+"m"}</text>`:"").join("")}<text x="4" y="${Y(E.drift[0])-6}" font-size="10" fill="#C9432E" font-family="Plus Jakarta Sans" font-weight="700">Drifted</text></svg>`;
+}
+function curveChart(){
+  const C=D.curves, w=360, h=130, n=C.steps.length, mx=C.model.money[n-1]*1.05, X=i=>i/(n-1)*w, Y=v=>h-16-(v/mx)*(h-24);
+  const ln=(arr,col,wd)=>`<polyline points="${arr.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="${wd}"/>`;
+  const bi = C.steps.indexOf(budget);
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" aria-hidden="true">${ln(C.rand.money,"#C7CDD3",1.6)}${ln(C.rich.money,"#9AA3AE",1.6)}${ln(C.model.money,"#0F1B2D",2.4)}<line x1="${X(bi)}" x2="${X(bi)}" y1="0" y2="${h-16}" stroke="#4F5BD5" stroke-dasharray="3 3"/><circle cx="${X(bi)}" cy="${Y(C.model.money[bi])}" r="4" fill="#4F5BD5"/>${[0,250,500,750,1000].map(s=>`<text x="${X(C.steps.indexOf(s))}" y="${h-3}" font-size="9" fill="#5D6B7E" text-anchor="${s===0?"start":s===1000?"end":"middle"}" font-family="IBM Plex Mono">${s}</text>`).join("")}</svg><p class="hint">Dark line: warning signs. Grey: richest first and random. Steep early, flat later.</p>`;
+}
+
+addEventListener("resize",()=>{ if(!selD){ vb=homeVB(); HOMEW=vb.w; setVB(); } });
+paintMap(); render();
+</script>
