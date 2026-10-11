@@ -1,0 +1,243 @@
+<title>Quiet Exits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a working tool. Inputs on the left (drag the charts), live answer on the right. Light by design. */
+:root{
+  --paper:#F7F7F4; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --line:#E5E3DC; --soft:#F0EFEA;
+  --t0:#D9822B; --t1:#5B6CD9; --t2:#7D9A8C; --low:#2E8B6E; --mid:#C99A1E; --high:#C8462F; --inc:#3E7BB6;
+  --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--t1);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:22px;padding-block:0 40px}
+header{display:flex;align-items:center;gap:14px;padding-block:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.tagline{color:var(--muted);font-weight:600}
+header a{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-spacing:-.02em}
+.lede{margin:0 0 18px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:14px;min-width:0}
+.out{position:sticky;top:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lbl{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-weight:700;font-size:.84rem}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.try{border:1px dashed #C9C6BC;background:var(--soft);border-radius:12px;padding:8px 12px;font-weight:700;font-size:.84rem}
+.try:hover{border-color:var(--ink)}
+.chart{display:grid;gap:4px}
+.chart .h{display:flex;justify-content:space-between;align-items:baseline}
+.chart .h b{font-size:.95rem}
+.chart .h span{font-size:.78rem;color:var(--muted)}
+.chart svg{width:100%;height:auto;display:block;touch-action:none;user-select:none}
+.handle{cursor:ns-resize}
+.toggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tg{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;font-weight:600;font-size:.88rem}
+.sw{width:36px;height:20px;border-radius:10px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .2s}
+.tg[aria-pressed="true"] .sw{background:var(--ink)}.tg[aria-pressed="true"] .sw::after{left:19px}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:800}
+/* output */
+.gauge{display:grid;gap:6px}
+.gauge .big{font-size:3.4rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.level{display:inline-block;font-weight:800;font-size:.82rem;border-radius:999px;padding:3px 10px;color:#fff}
+.meter{height:12px;border-radius:6px;background:var(--soft);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:6px;transition:width .35s,background .35s}
+.reasons{display:grid;gap:8px}
+.reason{display:grid;grid-template-columns:minmax(0,10.5rem) minmax(0,1fr) 3rem;gap:10px;align-items:center;font-size:.9rem;font-weight:600}
+.reason .t{height:10px;border-radius:5px;background:var(--soft);overflow:hidden}
+.reason .t i{display:block;height:100%;border-radius:5px;transition:width .35s}
+.reason .v{text-align:right;font-family:var(--mono);font-size:.82rem}
+.resp{border-radius:16px;padding:14px;display:grid;gap:4px}
+.resp b{font-size:1.02rem}
+.resp span{font-size:.88rem}
+.levers{display:grid;gap:6px}
+.lever{display:flex;justify-content:space-between;gap:10px;border-radius:12px;background:var(--soft);padding:9px 12px;font-size:.88rem;font-weight:600}
+.lever b{font-family:var(--mono)}
+.real{border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:8px}
+.real button{justify-self:start}
+.note{font-size:.78rem;color:var(--muted);margin:0}
+footer{margin-top:22px;font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:14px}
+footer a{color:var(--ink);font-weight:600}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.out{position:static}}
+@media (max-width:520px){.wrap{padding-inline:16px}.toggles{grid-template-columns:minmax(0,1fr)}.reason{grid-template-columns:minmax(0,7.5rem) minmax(0,1fr) 2.8rem}.gauge .big{font-size:2.8rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 18h16"/><path d="M7 14V9M12 14V6M17 14v-3"/></svg></span>Quiet Exits</div>
+    <span class="tagline">Check a customer</span>
+    <a href="../">Portfolio</a>
+  </header>
+
+  <h1>Will this customer's money leave, and why?</h1>
+  <p class="lede">Drag the charts or try a scenario. Two models trained on 1.06 million real bank transactions answer live.</p>
+
+  <div class="layout">
+    <div class="card">
+      <div class="row"><span class="lbl">Start from a real customer</span></div>
+      <div class="row" id="presets"></div>
+      <div class="row"><span class="lbl">Try</span><button class="try" data-s="income">Income stops</button><button class="try" data-s="cash">Big cash withdrawal</button><button class="try" data-s="spend">Spending creeps up</button><button class="try" data-s="recover">Saves more</button><button class="chip" id="reset">Reset</button></div>
+      <div class="chart"><div class="h"><b>Balance</b><span id="bal-v">drag the dots</span></div><svg id="c-bal" viewBox="0 0 640 170"></svg></div>
+      <div class="chart"><div class="h"><b>Money coming in</b><span>salary, pension, transfers</span></div><svg id="c-in" viewBox="0 0 640 96"></svg></div>
+      <div class="chart"><div class="h"><b>Cash taken out</b><span>ATM and counter withdrawals</span></div><svg id="c-cash" viewBox="0 0 640 96"></svg></div>
+      <div class="toggles">
+        <button class="tg" id="tg-loan" aria-pressed="false">Has a loan<span class="sw"></span></button>
+        <button class="tg" id="tg-late" aria-pressed="false">Loan payments late<span class="sw"></span></button>
+        <button class="tg" id="tg-pen" aria-pressed="false">Gets a pension<span class="sw"></span></button>
+        <div class="tg">Overdrafts, 6 months<span class="step"><button id="odm" aria-label="Fewer overdrafts">−</button><b id="od" class="num">0</b><button id="odp" aria-label="More overdrafts">+</button></span></div>
+      </div>
+    </div>
+
+    <div class="card out" aria-live="polite">
+      <div class="gauge">
+        <span class="lbl">Chance money leaves in the next 3 months</span>
+        <div class="row" style="align-items:baseline;gap:12px"><span class="big num" id="p"></span><span class="level" id="lvl"></span></div>
+        <div class="meter"><i id="meter"></i></div>
+        <span class="note num" id="risk"></span>
+      </div>
+      <div><div class="lbl" style="margin-bottom:8px">Likely reason</div><div class="reasons" id="reasons"></div></div>
+      <div class="resp" id="resp"></div>
+      <div><div class="lbl" style="margin-bottom:8px">What would change it</div><div class="levers" id="levers"></div></div>
+      <div class="real" id="real"></div>
+    </div>
+  </div>
+
+  <footer><span>Data: PKDD'99 Czech bank, 1993 to 1998 (Berka and Sochorova). Models: LightGBM, run in your browser.</span><a href="report.html">How the models were built</a><a href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></footer>
+</div>
+
+<script>/*__ENGINE__*/</script>
+<script>
+const M = /*__TOOL__*/null;
+const $ = s => document.querySelector(s);
+const K = n => Math.abs(n)>=1e6 ? (n/1e6).toFixed(2)+"M" : Math.round(n/1000)+"k";
+const pct = v => Math.round(v*100)+"%";
+const MONTHS = ["Oct","Nov","Dec","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep"];
+const TC = ["#D9822B","#5B6CD9","#7D9A8C"];
+const TNAME = ["Big purchase coming","Income about to stop","Living off savings"];
+const RESP = [
+  ["Capture the purchase","Offer a loan or instalments so savings stay with the bank.","#FBEEDF"],
+  ["Win back the income","Offer to move the salary here, or help if it's job loss.","#E9ECFB"],
+  ["Light touch","Spending a little more than comes in. Normal life, so don't chase it hard.","#EAF1EE"]];
+const fi = n => M.feat.indexOf(n), ti = n => M.tfeat.indexOf(n);
+let cur, base, preset = 1, edited = false, revealed = false;
+
+function load(i){
+  const p = M.presets[i]; preset = i; edited = false; revealed = false;
+  cur = { bal:p.bal.slice(), end:p.end.slice(), inn:p.inn.slice(), out:p.out.slice(), cash:p.cash.slice(), salary:p.salary.slice(),
+          x:p.x, tf:p.tf, cash_ratio:p.cash_ratio, overdraft6:p.x[fi("overdraft_6")], pension:p.x[fi("pension_6")]>0,
+          hasLoan:p.x[fi("has_loan")]>0, loanTrouble:p.x[fi("loan_in_trouble")]>0, loanPay:p.tf[ti("loan_pay")]>0 };
+  base = JSON.parse(JSON.stringify(cur));
+  render();
+}
+$("#presets").innerHTML = M.presets.map((p,i)=>`<button class="chip" data-i="${i}">${p.name}</button>`).join("");
+$("#presets").addEventListener("click", e=>{ const b=e.target.closest(".chip"); if(b) load(+b.dataset.i); });
+$("#reset").addEventListener("click", ()=>load(preset));
+
+/* -------- editing helpers: keep balances consistent with flows */
+function shiftFrom(i, d){ for(let k=i;k<cur.bal.length;k++){ cur.bal[k]=Math.max(0,cur.bal[k]+d); cur.end[k]=Math.max(0,cur.end[k]+d); } }
+function setIncome(i, v){ v=Math.max(0,v); const d=v-cur.inn[i]; cur.inn[i]=v; cur.salary[i]=Math.max(0,cur.salary[i]+Math.min(0,d)); shiftFrom(i,d); }
+function setCash(i, v){ v=Math.max(0,v); const d=v-Math.abs(cur.cash[i]); cur.cash[i]=-v; cur.out[i]-=d; shiftFrom(i,-d); }
+function setBal(i, v){ v=Math.max(0,v); const d=v-cur.bal[i]; cur.bal[i]=v; cur.end[i]=Math.max(0,cur.end[i]+d); cur.out[i]+=Math.min(0,d); }
+function touched(){ edited = true; revealed = false; render(); }
+
+document.querySelectorAll(".try").forEach(b=>b.addEventListener("click",()=>{
+  const n = cur.bal.length, L = n-1, avg = cur.bal.slice(0,6).reduce((a,v)=>a+v,0)/6;
+  if(b.dataset.s==="income"){ setIncome(L-2, cur.inn[L-2]*0.3); setIncome(L-1, 0); setIncome(L, 0); }
+  if(b.dataset.s==="cash"){ setCash(L, Math.abs(cur.cash[L]) + cur.bal[L]*0.5); }
+  if(b.dataset.s==="spend"){ for(let k=L-2;k<=L;k++){ const extra = cur.inn[k]*0.25 + avg*0.05; cur.out[k]-=extra; shiftFrom(k,-extra); } }
+  if(b.dataset.s==="recover"){ for(let k=L-2;k<=L;k++){ const extra = avg*0.08; cur.out[k]+=extra; shiftFrom(k,extra); } }
+  touched();
+}));
+const tog = (id, key) => $(id).addEventListener("click", ()=>{ cur[key] = !cur[key]; if(key==="hasLoan"){ cur.loanPay = cur.hasLoan; if(!cur.hasLoan) cur.loanTrouble=false; } if(key==="loanTrouble" && cur.loanTrouble){ cur.hasLoan=true; cur.loanPay=true; } touched(); });
+tog("#tg-loan","hasLoan"); tog("#tg-late","loanTrouble"); tog("#tg-pen","pension");
+$("#odm").addEventListener("click",()=>{ cur.overdraft6=Math.max(0,cur.overdraft6-1); touched(); });
+$("#odp").addEventListener("click",()=>{ cur.overdraft6=Math.min(6,cur.overdraft6+1); touched(); });
+
+/* -------- draggable charts */
+function chart(svgId, kind){
+  const svg = $(svgId), W=640, H = kind==="bal"?170:96, pad={l:44,r:10,t:10,b:kind==="bal"?22:20};
+  const n = cur.bal.length, X = i => pad.l + (i+.5)*(W-pad.l-pad.r)/n;
+  const vals = kind==="bal" ? cur.bal : kind==="in" ? cur.inn : cur.cash.map(Math.abs);
+  const ref = kind==="bal" ? Math.max(...base.bal, ...cur.bal) : Math.max(...base.inn, ...base.cash.map(Math.abs), ...cur.inn, ...cur.cash.map(Math.abs));
+  const top = Math.max(1, ref*1.25), Y = v => H-pad.b-(v/top)*(H-pad.t-pad.b);
+  let s = `<line x1="${pad.l}" x2="${W-pad.r}" y1="${H-pad.b}" y2="${H-pad.b}" stroke="#E5E3DC"/>`;
+  [0.5,1].forEach(f=>{ const v=top*f/1.25; s+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#F0EFEA"/><text x="${pad.l-6}" y="${Y(v)+4}" font-size="11" fill="#5E6676" text-anchor="end">${K(v)}</text>`; });
+  s += `<rect x="${X(n-3)-((W-pad.l-pad.r)/n)/2}" y="${pad.t}" width="${3*(W-pad.l-pad.r)/n}" height="${H-pad.t-pad.b}" fill="#14213D" opacity=".035" rx="6"/>`;
+  if(kind==="bal"){
+    const usual = cur.bal.slice(n-6).reduce((a,v)=>a+v,0)/6;
+    s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${Y(usual)}" y2="${Y(usual)}" stroke="#C9C6BC" stroke-dasharray="4 4"/><text x="${W-pad.r}" y="${Y(usual)-5}" font-size="10.5" fill="#5E6676" text-anchor="end">usual (6-month average)</text>`;
+    s += `<polyline points="${vals.map((v,i)=>`${X(i)},${Y(v)}`).join(" ")}" fill="none" stroke="#14213D" stroke-width="2.4" stroke-linejoin="round"/>`;
+    vals.forEach((v,i)=>{ s+=`<circle class="handle" data-i="${i}" cx="${X(i)}" cy="${Y(v)}" r="${i>=n-6?7:5}" fill="${i>=n-6?"#14213D":"#fff"}" stroke="#14213D" stroke-width="2"/>`; });
+  } else {
+    const bw = (W-pad.l-pad.r)/n*.56, col = kind==="in" ? "#3E7BB6" : "#D9822B";
+    vals.forEach((v,i)=>{ s+=`<rect class="handle" data-i="${i}" x="${X(i)-bw/2}" y="${Y(v)}" width="${bw}" height="${Math.max(2,H-pad.b-Y(v))}" rx="4" fill="${col}" opacity="${i>=n-6?1:.45}"/><rect class="handle" data-i="${i}" x="${X(i)-bw/2-6}" y="${pad.t}" width="${bw+12}" height="${H-pad.t-pad.b}" fill="transparent"/>`; });
+  }
+  MONTHS.forEach((m,i)=>{ s+=`<text x="${X(i)}" y="${H-5}" font-size="10.5" fill="${i===n-1?"#14213D":"#5E6676"}" font-weight="${i===n-1?800:500}" text-anchor="middle">${i===n-1?"Now":m}</text>`; });
+  svg.innerHTML = s;
+  svg._geo = {X, Y, top, H, pad, n, W};
+}
+function drag(svgId, kind){
+  const svg = $(svgId); let active = -1;
+  const val = ev => { const r = svg.getBoundingClientRect(), g = svg._geo; const y = (ev.clientY - r.top) * (g.H / r.height); return Math.max(0, (g.H - g.pad.b - y) / (g.H - g.pad.t - g.pad.b) * g.top); };
+  const idx = ev => { const r = svg.getBoundingClientRect(), g = svg._geo; const x = (ev.clientX - r.left) * (g.W / r.width); return Math.max(0, Math.min(g.n-1, Math.round((x - g.pad.l) / ((g.W-g.pad.l-g.pad.r)/g.n) - .5))); };
+  const apply = ev => { const v = val(ev); if(kind==="bal") setBal(active, v); else if(kind==="in") setIncome(active, v); else setCash(active, v); edited = true; revealed = false; render(); };
+  svg.addEventListener("pointerdown", ev => { active = idx(ev); svg.setPointerCapture(ev.pointerId); apply(ev); });
+  svg.addEventListener("pointermove", ev => { if(active>=0) apply(ev); });
+  svg.addEventListener("pointerup", () => { active = -1; });
+  svg.addEventListener("pointercancel", () => { active = -1; });
+}
+drag("#c-bal","bal"); drag("#c-in","in"); drag("#c-cash","cash");
+
+/* -------- results */
+function stressed(){ return (cur.hasLoan && cur.loanTrouble) || cur.overdraft6 >= 2; }
+function render(){
+  chart("#c-bal","bal"); chart("#c-in","in"); chart("#c-cash","cash");
+  document.querySelectorAll("#presets .chip").forEach(c=>c.setAttribute("aria-pressed", +c.dataset.i===preset && !edited));
+  $("#tg-loan").setAttribute("aria-pressed", cur.hasLoan); $("#tg-late").setAttribute("aria-pressed", cur.hasLoan && cur.loanTrouble); $("#tg-pen").setAttribute("aria-pressed", cur.pension); $("#od").textContent = cur.overdraft6;
+  $("#bal-v").textContent = `now ${K(cur.bal[cur.bal.length-1])} CZK · drag the dots`;
+  const r = Engine.predict(M, cur);
+  const lvl = r.p < .15 ? ["Low","var(--low)"] : r.p < .4 ? ["Watch","var(--mid)"] : ["High","var(--high)"];
+  $("#p").textContent = pct(r.p); $("#lvl").textContent = lvl[0]; $("#lvl").style.background = lvl[1];
+  $("#meter").style.width = Math.max(2, r.p*100)+"%"; $("#meter").style.background = lvl[1];
+  $("#risk").textContent = `About ${K(r.atRisk)} CZK of a usual ${K(r.past6)} CZK balance at risk.`;
+  const top = r.pt.indexOf(Math.max(...r.pt));
+  $("#reasons").innerHTML = r.pt.map((v,i)=>`<div class="reason"><span style="color:${i===top?"#14213D":"#5E6676"}">${TNAME[i]}</span><span class="t"><i style="width:${(v*100).toFixed(1)}%;background:${TC[i]};opacity:${i===top?1:.5}"></i></span><span class="v">${pct(v)}</span></div>`).join("");
+  const nL = cur.inn.length, in3 = cur.inn.slice(nL-3).reduce((a,v)=>a+v,0), inp3 = cur.inn.slice(nL-6,nL-3).reduce((a,v)=>a+v,0);
+  const incomeFell = inp3 > 0 && in3 < 0.5*inp3;
+  const rs = r.p < .15 ? ["No action needed","This customer's money looks settled.","#EAF1EE"]
+    : stressed() ? ["Support first","Signs of money worries. Offer a repayment review, never a sales pitch.","#FBE7E2"]
+    : incomeFell ? ["Check in now","Income has already dropped. Ask what changed: offer help, or a salary switch if they moved jobs.","#E9ECFB"]
+    : RESP[top];
+  $("#resp").style.background = rs[2]; $("#resp").innerHTML = `<span class="lbl">Suggested response</span><b>${rs[0]}</b><span>${rs[1]}</span>`;
+  // what would change it
+  const n = cur.bal.length, L = n-1, levers = [];
+  const test = (label, fn) => { const c = JSON.parse(JSON.stringify(cur)); const save = cur; cur = c; fn(); const q = Engine.predict(M, cur).p; cur = save; if(Math.abs(q - r.p) >= .03) levers.push([label, q]); };
+  const avgIn = cur.inn.slice(0,6).reduce((a,v)=>a+v,0)/6, avgCash = cur.cash.slice(0,6).reduce((a,v)=>a+Math.abs(v),0)/6;
+  test("If income returns to normal", ()=>{ for(let k=L-2;k<=L;k++) if(cur.inn[k] < avgIn*.8) setIncome(k, avgIn); });
+  test("If cash withdrawals return to normal", ()=>{ for(let k=L-2;k<=L;k++) if(Math.abs(cur.cash[k]) > avgCash*1.2) setCash(k, avgCash); });
+  test("If the balance holds steady", ()=>{ const v = cur.bal[L-3]; for(let k=L-2;k<=L;k++){ cur.bal[k]=v; cur.end[k]=v; } });
+  test("If loan payments catch up", ()=>{ cur.loanTrouble=false; cur.overdraft6=0; });
+  test("If income stops", ()=>{ setIncome(L-1,0); setIncome(L,0); });
+  levers.sort((a,b)=>Math.abs(b[1]-r.p)-Math.abs(a[1]-r.p));
+  $("#levers").innerHTML = levers.slice(0,3).map(([l,q])=>`<div class="lever"><span>${l}</span><b style="color:${q<r.p?"var(--low)":"var(--high)"}">${pct(r.p)} → ${pct(q)}</b></div>`).join("") || `<p class="note">Small changes barely move this one.</p>`;
+  // what really happened
+  const p = M.presets[preset];
+  if(edited){ $("#real").innerHTML = `<p class="note">You've edited this customer, so there's no real outcome to compare. <button class="chip" id="back" style="margin-left:6px">Back to the real data</button></p>`; $("#back").onclick = ()=>load(preset); }
+  else {
+    $("#real").innerHTML = revealed ? `<span class="lbl">What really happened, Oct to Dec 1998</span><b style="color:${p.drift?"var(--high)":"var(--low)"}">${p.drift?`Money left: balance fell to ${K(p.after.reduce((a,v)=>a+v,0)/p.after.length)} CZK on average`:"Money stayed"}${p.drift&&p.type>=0?` · reason: ${TNAME[p.type].toLowerCase()}`:""}</b>` : `<button class="chip" id="rv">Show what really happened</button>`;
+    $("#rv")?.addEventListener("click", ()=>{ revealed = true; render(); });
+  }
+}
+load(1);
+</script>
