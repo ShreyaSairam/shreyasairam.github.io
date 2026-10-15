@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Churn Prediction: Employees to Bank Customers · Shreya Sairam</title>
+<meta name="description" content="Who is about to leave, why, and what to do about it. First for employees, then for bank customers.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Churn Prediction: Employees to Bank Customers"><meta property="og:description" content="Who is about to leave, why, and what to do about it. First for employees, then for bank customers."><meta property="og:image" content="https://shreyasairam.github.io/media/og.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5F4EF;--card:#FFFFFF;--ink:#1D2033;--soft:#5B5F75;--line:#E2E0D8;--navy:#1E2761;--navy-deep:#141B47;--gold:#B88A12;--gold-soft:#E4CD82;--ice:#D6E2FB;
+--display:"Fraunces",Georgia,serif;--body:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0F1129;--card:#171A3D;--ink:#ECEDF6;--soft:#A7AAC6;--line:#2A2E57;--navy:#232C72;--navy-deep:#0B0E28;--gold:#E2C26A;--ice:#C9D7F7;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0F1129;--card:#171A3D;--ink:#ECEDF6;--soft:#A7AAC6;--line:#2A2E57;--navy:#232C72;--navy-deep:#0B0E28;--gold:#E2C26A;--ice:#C9D7F7;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit}:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+.wrap{max-width:860px;margin:0 auto;padding-inline:20px}
+.top{background:var(--navy-deep);color:var(--ice)}
+.top .wrap{max-width:1080px;display:flex;justify-content:space-between;align-items:center;padding-block:14px;font-family:var(--mono);font-size:13px}
+.top a{text-decoration:none;opacity:.85}.top a:hover{opacity:1}
+.hero{background:linear-gradient(165deg,var(--navy-deep),var(--navy));color:var(--ice);padding-block:46px 120px}
+.kind{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(34px,5.6vw,52px);line-height:1.05;margin:10px 0 14px;color:#fff;text-wrap:balance}
+.hook{font-size:clamp(18px,2.2vw,21px);max-width:44ch;margin:0 0 22px;opacity:.95}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-block;font-family:var(--mono);font-size:13px;text-decoration:none;padding:10px 17px;border-radius:8px;border:1px solid var(--gold-soft);color:var(--gold-soft)}
+.btn.primary{background:var(--gold-soft);color:var(--navy-deep)}
+.btn:hover{background:#fff;color:var(--navy-deep);border-color:#fff}
+.shot{margin-top:-90px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 50px rgba(20,27,71,.18);background:var(--navy-deep);aspect-ratio:16/9}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:left top;display:block}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-block:30px 10px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.meta div{min-width:0}.meta b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:4px}
+.meta span{font-size:14.5px;color:var(--soft);line-height:1.45;display:block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-block:30px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.stat b{display:block;font-family:var(--display);font-size:clamp(26px,3.4vw,34px);font-weight:600;line-height:1.05}
+.stat span{display:block;font-size:13.5px;color:var(--soft);margin-top:6px;line-height:1.4}
+section{padding-block:26px}
+.n{font-family:var(--mono);font-size:12px;color:var(--gold);letter-spacing:.12em}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(25px,3.2vw,32px);line-height:1.15;margin:4px 0 14px}
+section p{margin:0 0 14px;max-width:66ch}
+.steps{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:0;counter-reset:s}
+.steps li{position:relative;padding:0 0 22px 52px;counter-increment:s}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-family:var(--mono);font-size:14px}
+.steps li::after{content:"";position:absolute;left:16.5px;top:38px;bottom:4px;width:1px;background:var(--line)}
+.steps li:last-child::after{display:none}
+.steps b{display:block;font-size:17px;margin-bottom:2px}.steps span{color:var(--soft)}
+.lessons{display:grid;gap:12px;margin-top:16px}
+.lesson{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:16px 18px}
+.lesson b{display:block;margin-bottom:3px}.lesson span{color:var(--soft)}
+.next{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-block:30px 50px}
+.next a{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.next a:hover{border-color:var(--gold)}
+.next small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.next strong{display:block;font-family:var(--display);font-size:19px;margin-top:4px}
+.next a.r{text-align:right}
+footer{background:var(--navy-deep);color:var(--ice);padding-block:28px;font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+@media (max-width:700px){.meta,.stats{grid-template-columns:1fr}.next{grid-template-columns:1fr}.next a.r{text-align:left}.hero{padding-bottom:90px}.shot{margin-top:-64px}}
+</style></head><body>
+<nav class="top"><div class="wrap"><a href="../index.html#work">← All projects</a><a href="../index.html">Shreya Sairam</a></div></nav>
+<header class="hero"><div class="wrap">
+<span class="kind">Machine learning · Banking and HR</span><h1>Churn Prediction: Employees to Bank Customers</h1><p class="hook">Who is about to leave, why, and what to do about it. First for employees, then for bank customers.</p>
+<div class="btns"><a class="btn primary" href="../quiet-exits/index.html">Try the bank tool</a><a class="btn" href="../quiet-exits/employees.html">Try the employee tool</a><a class="btn" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></div></div></header>
+<main class="wrap">
+<div class="shot"><img src="../quiet-exits/media/poster.jpg" alt="Churn Prediction: Employees to Bank Customers screenshot"></div>
+<div class="meta"><div><b>Role</b><span>Solo. The employee half rebuilds my Business Analytics coursework, first done in SPSS</span></div><div><b>When</b><span>2026</span></div><div><b>Built with</b><span>SQL (DuckDB), Python, LightGBM, scikit-learn, JavaScript</span></div></div>
+<div class="stats"><div class="stat"><b>1.06M</b><span>real bank transactions</span></div><div class="stat"><b>0.89 AUC</b><span>3 months ahead, on months it never saw</span></div><div class="stat"><b>53%</b><span>of leavers caught in the top 10% of flags</span></div></div>
+<section><span class="n">01</span><h2>The problem</h2><p>Bank customers rarely close their accounts. They drift. Savings move out, the salary stops arriving, and by the time the account is closed, the decision was made months ago.</p><p>Employees are the same. By the time someone resigns, it is too late to ask what would have kept them.</p></section>
+<section><span class="n">02</span><h2>What I built</h2><p>Two live tools that answer as you change the inputs.</p><p>Employees: change overtime, pay, satisfaction or years since promotion, and see the chance they leave, the top three reasons, and a suggested action. Five models are compared underneath.</p><p>Bank customers: drag a customer's balance, income and cash withdrawals, and see the chance their money leaves within 3 months, the likely reason (a big purchase, income stopping, or living off savings), and the response that fits.</p></section>
+<section><span class="n">03</span><h2>How it works</h2><ol class="steps"><li><b>Shape the data in SQL</b><span>1.06 million raw transactions from an open Czech bank dataset become one row per account per month.</span></li><li><b>Define leaving</b><span>An account drifts when its next 3 months average under 70% of its last 6 months.</span></li><li><b>Build 23 signals</b><span>Balance trend, income, share of cash withdrawals, loan payments and more.</span></li><li><b>Train on the past, test on the future</b><span>LightGBM learns from 1994 to mid 1997 and is tested on late 1997 to 1998, just like real life.</span></li><li><b>Guess the reason, then run it live</b><span>A second model names the likely reason. Both models are exported so they run in the browser instantly.</span></li></ol></section>
+<section><span class="n">04</span><h2>What I found</h2><p>The bank model reached 0.89 AUC, against 0.86 for a simple logistic regression. Its top 10% of flags caught 53% of the accounts that drifted. It named the reason correctly 67% of the time, against 48% for always guessing the most common one.</p><p>For employees, logistic regression scored best (0.85 AUC), so it runs live because its reasons are easy to explain. Overtime was the strongest single driver, and clustering found groups whose leaving rates ranged from 7% to 28%.</p></section>
+<section><span class="n">05</span><h2>What I learned</h2><div class="lessons"><div class="lesson"><b>Not everyone can be talked out of leaving.</b><span>Someone saving for a wedding will move their money whatever you say. So the tool suggests a response that fits the reason, not just 'call them'.</span></div><div class="lesson"><b>Test on later months, not random rows.</b><span>Random splits flatter a model. Out of time testing gives honest numbers.</span></div><div class="lesson"><b>What I'd do next</b><span>The employee data is IBM's fictional dataset. Real HR data would need careful privacy handling and fairness checks.</span></div></div></section>
+<div class="btns" style="margin-top:8px"><a class="btn primary" style="background:var(--navy);border-color:var(--navy);color:#fff" href="../quiet-exits/index.html">Try the bank tool</a><a class="btn" style="border-color:var(--navy);color:var(--navy)" href="../quiet-exits/employees.html">Try the employee tool</a><a class="btn" style="border-color:var(--navy);color:var(--navy)" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/quiet-exits/code" target="_blank" rel="noopener">Code</a></div>
+<div class="next"><a href="genetic-testing.html"><small>← Previous</small><strong>Genetic Testing Decision Support</strong></a><a class="r" href="out-of-phase.html"><small>Next →</small><strong>Out of Phase</strong></a></div>
+</main>
+<footer><div class="wrap"><span>Shreya Sairam · Curious about the data. Careful with the answer.</span><a href="../index.html">Back to portfolio</a></div></footer>
+</body></html>
