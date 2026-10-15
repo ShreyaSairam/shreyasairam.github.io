@@ -2,7 +2,7 @@
 
 Live site: https://shreyasairam.github.io
 
-AI, data analytics and energy projects, each with a demo.
+AI and data analytics projects, each with a demo.
 
 | Project | What it is | Demo |
 |---|---|---|
