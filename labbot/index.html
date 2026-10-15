@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="LabBot: tell a hospital lab robot what to do in plain English. It plans its route with A*, goes around obstacles and people, and charges itself.">
+<title>LabBot: Lab Robot</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F7F7F4; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --line:#E5E3DC; --soft:#F0EFEA;
+  --ok:#2E8B6E; --amber:#C99A1E; --red:#C8462F; --acc:#5B6CD9;
+  --blood:#C8462F; --chem:#5B6CD9; --urine:#C99A1E;
+  --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:22px;padding-block:0 40px}
+header{display:flex;align-items:center;gap:14px;padding-block:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+header .home{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+header .code{color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-spacing:-.02em}
+.lede{margin:0 0 18px;color:var(--muted);max-width:760px}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.lbl{font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-weight:600;font-size:.84rem;text-align:left}
+.chip:hover{border-color:var(--ink)}
+.tog{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 11px;font-weight:700;font-size:.8rem;color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:12px;padding:10px 16px;font-weight:700}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+
+/* map */
+.mapbox{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff}
+#map{display:block;width:100%;height:auto;cursor:crosshair;touch-action:manipulation}
+.pill{background:var(--ink);color:#fff;border-radius:999px;padding:7px 13px;font-size:.84rem;font-weight:700;display:flex;gap:8px;align-items:center;justify-self:start;max-width:100%}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#7BE0B5;flex:none}
+.pill.wait .dot{background:#F2C14E}
+.pill.idle .dot{background:#9AA3B5}
+.hint{font-size:.82rem;color:var(--muted)}
+.bar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.speed{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:600;color:var(--muted)}
+.speed input{width:110px;accent-color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{background:var(--soft);border-radius:12px;padding:9px 11px}
+.stat b{display:block;font-size:1.25rem;font-weight:800}
+.stat span{font-size:.74rem;color:var(--muted);font-weight:600}
+.batt{height:6px;border-radius:4px;background:#E2E0D8;overflow:hidden;margin-top:5px}
+.batt i{display:block;height:100%;background:var(--ok);transition:width .2s}
+.batt.low i{background:var(--red)}
+
+/* command */
+form.cmd{display:flex;gap:8px}
+form.cmd input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#fff}
+form.cmd input:focus{border-color:var(--ink);outline:none}
+.mic{border:1px solid var(--line);background:#fff;border-radius:12px;width:44px;display:grid;place-items:center;flex:none}
+.mic.on{background:var(--red);border-color:var(--red);color:#fff}
+.examples{display:grid;gap:6px}
+.reply{background:var(--soft);border-radius:14px;padding:11px 13px;font-size:.9rem}
+.reply .who{display:flex;gap:8px;align-items:center;font-weight:800;font-size:.82rem;margin-bottom:3px}
+.badge{font-family:var(--mono);font-size:.7rem;font-weight:500;border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 8px;color:var(--muted)}
+.badge.cloud{border-color:var(--acc);color:var(--acc)}
+ol.plan{list-style:none;margin:0;padding:0;display:grid;gap:6px;counter-reset:p}
+ol.plan li{counter-increment:p;display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:start;font-size:.88rem;padding:7px 9px;border-radius:10px;border:1px solid var(--line)}
+ol.plan li::before{content:counter(p);width:22px;height:22px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:.74rem;font-weight:800;color:var(--muted)}
+ol.plan li.active{border-color:var(--ink);background:#FBFAF6}
+ol.plan li.active::before{background:var(--ink);color:#fff}
+ol.plan li.done{color:var(--muted)}
+ol.plan li.done::before{content:"✓";background:var(--ok);color:#fff}
+ol.plan li.skipped{color:var(--muted);text-decoration:line-through}
+.note{display:block;font-size:.8rem;margin-top:3px;color:var(--muted);text-decoration:none}
+.note.warn{color:#9A3A26;font-weight:600}
+.tag{font-size:.68rem;font-weight:800;color:var(--red);border:1px solid var(--red);border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:1px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:6px;border-bottom:1px solid var(--soft);overflow-wrap:anywhere}
+table{table-layout:fixed}
+th:first-child{width:44px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
+.st{font-weight:600}
+.st.ready{color:var(--ok)}
+ul.log{list-style:none;margin:0;padding:0;max-height:170px;overflow:auto;font-family:var(--mono);font-size:.76rem;display:grid;gap:3px}
+ul.log li{color:var(--muted);overflow-wrap:anywhere}
+ul.log li b{color:var(--ink);font-weight:500}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.how h3{margin:0 0 4px;font-size:1rem}
+.how p{margin:0;font-size:.88rem;color:var(--muted)}
+.how .card{gap:4px}
+footer{margin-top:22px;font-size:.82rem;color:var(--muted)}
+footer a{color:inherit}
+
+#map .spin{transform-box:fill-box;transform-origin:center;animation:sp .5s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#map .busy{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){#map .spin,#map .busy{animation:none}}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .how{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .wrap{padding-inline:16px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  header .code{display:none}
+  .bar{gap:10px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9.5 13h0M14.5 13h0"/><circle cx="12" cy="3.5" r="1"/></svg></span>LabBot</div>
+    <a class="code" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/labbot">Code</a>
+    <a class="home" href="../">Portfolio</a>
+  </header>
+
+  <h1>Tell the lab robot what to do</h1>
+  <p class="lede">LabBot carries patient samples around a hospital lab. Type or say a task in plain English. It turns your words into a plan, finds its route with A*, goes around wet floors and people, and charges itself when the battery runs low.</p>
+
+  <div class="layout">
+    <section class="card" aria-label="Lab map">
+      <div class="pill idle" id="pill" aria-live="polite"><span class="dot"></span><span id="status">Ready at the charging dock</span></div>
+      <div class="mapbox">
+        <svg id="map" viewBox="0 0 768 480" role="img" aria-label="Map of the lab with the robot, stations and sample rack"></svg>
+      </div>
+      <div class="bar">
+        <p class="hint" style="margin:0">Tap the floor to drop a <b>wet floor</b> sign. LabBot replans around it.</p>
+        <div class="row">
+          <button class="tog" id="t-search" aria-pressed="false" type="button">Show A* search</button>
+          <button class="tog" id="t-nurse" aria-pressed="false" type="button">Busy corridor</button>
+        </div>
+      </div>
+      <div class="bar">
+        <label class="speed">Speed <input type="range" id="speed" min="0" max="3" step="1" value="1" aria-label="Simulation speed"><span id="speed-v" class="num">1×</span></label>
+        <div class="row">
+          <button class="btn ghost" id="stop" type="button">Stop</button>
+          <button class="btn ghost" id="clear" type="button">Clear signs</button>
+          <button class="btn ghost" id="reset" type="button">Reset lab</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b class="num" id="s-batt">100%</b><span>Battery</span><div class="batt" id="battbar"><i style="width:100%"></i></div></div>
+        <div class="stat"><b class="num" id="s-dist">0 m</b><span>Distance driven</span></div>
+        <div class="stat"><b class="num" id="s-rep">0</b><span>Route replans</span></div>
+        <div class="stat"><b class="num" id="s-res">0 / 6</b><span>Results ready</span></div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Commands">
+      <div class="lbl">Give LabBot a task</div>
+      <form class="cmd" id="cmd" autocomplete="off">
+        <input id="q" placeholder="e.g. Take the urgent samples to the right analyser" aria-label="Command for LabBot">
+        <button class="mic" id="mic" type="button" aria-label="Speak a command" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <button class="btn" type="submit">Send</button>
+      </form>
+      <div class="examples" id="examples">
+        <button class="chip" type="button">Take the urgent blood sample from bed 4 to analyser B, then put the rest in the fridge</button>
+        <button class="chip" type="button">Deliver all samples</button>
+        <button class="chip" type="button">Run the chemistry samples, then go charge</button>
+        <button class="chip" type="button">Take bed 3 to the fridge and go to the centrifuge</button>
+      </div>
+      <div class="reply" id="reply">
+        <div class="who">LabBot <span class="badge" id="parser">on-device parser</span></div>
+        <div id="reply-text">Six samples are waiting in the reception rack. Two are urgent. Tell me what to do with them.</div>
+      </div>
+      <div class="lbl">Plan</div>
+      <ol class="plan" id="plan"><li class="done" style="list-style:none">Nothing planned yet.</li></ol>
+      <div class="lbl">Samples</div>
+      <table><thead><tr><th>Bed</th><th>Test</th><th>Status</th></tr></thead><tbody id="samples"></tbody></table>
+      <div class="lbl">Robot log</div>
+      <ul class="log" id="log" aria-live="polite"></ul>
+    </section>
+  </div>
+
+  <div class="how">
+    <div class="card"><h3>1. Language to tool calls</h3><p>A parser turns your sentence into structured calls like <code>move(sample 4, Analyser A)</code>. It checks them against lab rules first, so a blood count sent to the chemistry analyser gets corrected. A cloud LLM (Gemini) can plug in through a small worker; if it is off or slow, the on-device parser takes over.</p></div>
+    <div class="card"><h3>2. Planning the route</h3><p>Each trip is planned with A* on a grid of the lab. Turn on “Show A* search” to see which cells it explored. A wet floor sign or a nurse in the way triggers a replan from wherever the robot is.</p></div>
+    <div class="card"><h3>3. Running the job</h3><p>Urgent samples go first. Chemistry tubes are spun in the centrifuge before testing. Before each trip LabBot checks it has enough battery to get there and back to the dock, and charges first if not.</p></div>
+  </div>
+  <footer>A simulation built for my portfolio, inspired by how hospital labs move samples between analysers. Not a real robot controller. <a href="../">Back to portfolio</a></footer>
+</div>
+
+<script src="core.js"></script>
+<script>
+(function () {
+  "use strict";
+  // Optional cloud LLM. Leave empty to use the on-device parser only.
+  // Deploy labbot/cloud/worker.js and paste its URL here.
+  var LLM_ENDPOINT = "";
+
+  var L = window.LabCore, C = 32, NS = "http://www.w3.org/2000/svg";
+  var COLORS = { "Blood count": "#C8462F", "Chemistry": "#5B6CD9", "Urine": "#C99A1E" };
+  var SPEEDS = [0.5, 1, 2, 4], BASE = 3.2, COST = 0.6, HOME = L.STATIONS.dock.at;
+  var $ = function (id) { return document.getElementById(id); };
+  var svg = $("map");
+
+  var S, R, W, plan, obstacles, explored, showSearch = false, speed = 1, sim = 0, stats;
+
+  function key(p) { return p[0] + "," + p[1]; }
+  function eq(a, b) { return a && b && a[0] === b[0] && a[1] === b[1]; }
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function cx(x) { return x * C + C / 2; }
+  function stName(w) { return w === "rack" ? "reception" : L.STATIONS[w].name; }
+  function clock() { var t = Math.floor(sim); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
+  function log(msg) {
+    var li = document.createElement("li");
+    li.innerHTML = "<b>" + clock() + "</b> " + msg;
+    var ul = $("log"); ul.insertBefore(li, ul.firstChild);
+    while (ul.children.length > 60) ul.removeChild(ul.lastChild);
+  }
+
+  // Cells that must stay clear: stops, rack pick-up cells.
+  var PROTECT = {};
+  Object.keys(L.STATIONS).forEach(function (k) { PROTECT[key(L.STATIONS[k].at)] = 1; });
+  for (var k = 1; k <= 6; k++) PROTECT[k + ",2"] = 1;
+
+  function reset() {
+    S = L.freshSamples();
+    R = { c: HOME.slice(), next: null, prog: 0, path: [], micro: [], entry: null, wait: 0, battery: 100, carrying: null, status: "Ready at the charging dock", mode: "idle", spinning: false };
+    W = W ? { c: [3, 6], dir: 1, next: null, prog: 0, on: W.on } : { c: [3, 6], dir: 1, next: null, prog: 0, on: false };
+    plan = []; obstacles = {}; explored = []; sim = 0;
+    stats = { dist: 0, rep: 0 };
+    $("log").innerHTML = "";
+    drawStatic(); renderPlan(); renderSamples();
+    setReply("Six samples are waiting in the reception rack. Two are urgent. Tell me what to do with them.", null);
+    log("LabBot online at the charging dock.");
+  }
+
+  // ---------------- drawing ----------------
+  var gObs, gExp, pathLine, gStations, gTubes, gWalker, gRobot, robotTube, centBlades, badges = {};
+
+  function drawStatic() {
+    svg.innerHTML = "";
+    var defs = el("defs", {}, svg);
+    var pat = el("pattern", { id: "grid", width: C, height: C, patternUnits: "userSpaceOnUse" }, defs);
+    el("path", { d: "M" + C + " 0H0V" + C, fill: "none", stroke: "#EEECE6", "stroke-width": 1 }, pat);
+    el("rect", { x: 0, y: 0, width: 768, height: 480, fill: "#fff" }, svg);
+    el("rect", { x: C, y: 5 * C, width: 22 * C, height: 2 * C, fill: "#F4F3EE" }, svg);
+    el("rect", { x: 0, y: 0, width: 768, height: 480, fill: "url(#grid)" }, svg);
+    // room labels
+    [["RECEPTION", 3.5, 3.55], ["SPIN ROOM", 11.5, 3.55], ["ANALYSERS", 19, 3.55], ["CORRIDOR", 12, 6.0], ["CHARGING BAY", 4.5, 8.7], ["LAB HALL", 11.5, 8.7], ["COLD STORE", 19, 8.7]].forEach(function (r) {
+      var t = el("text", { x: r[1] * C, y: r[2] * C, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#B4B0A4", "letter-spacing": "1.5", "font-family": "Manrope, sans-serif" }, svg);
+      t.textContent = r[0];
+    });
+    for (var y = 0; y < L.H; y++) for (var x = 0; x < L.W; x++) if (L.isWall(x, y)) el("rect", { x: x * C, y: y * C, width: C, height: C, fill: "#14213D" }, svg);
+
+    gExp = el("g", {}, svg);
+    gObs = el("g", {}, svg);
+    pathLine = el("polyline", { fill: "none", stroke: "#5B6CD9", "stroke-width": 3, "stroke-dasharray": "2 6", "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+    gStations = el("g", {}, svg);
+    drawStations();
+    gTubes = el("g", {}, svg);
+    gWalker = el("g", { visibility: W.on ? "visible" : "hidden" }, svg);
+    el("circle", { cx: 0, cy: -7, r: 5, fill: "#6B4E9B" }, gWalker);
+    el("path", { d: "M-8 9 Q0 -4 8 9 Z", fill: "#6B4E9B" }, gWalker);
+    var wl = el("text", { x: 0, y: 20, "text-anchor": "middle", "font-size": 8, "font-weight": 800, fill: "#6B4E9B", "font-family": "Manrope, sans-serif" }, gWalker); wl.textContent = "NURSE";
+    gRobot = el("g", {}, svg);
+    el("circle", { cx: 0, cy: 0, r: 13, fill: "#14213D", stroke: "#fff", "stroke-width": 2 }, gRobot);
+    el("circle", { cx: -4.5, cy: -2, r: 2.4, fill: "#7BE0B5" }, gRobot);
+    el("circle", { cx: 4.5, cy: -2, r: 2.4, fill: "#7BE0B5" }, gRobot);
+    el("rect", { x: -5, y: 4, width: 10, height: 2, rx: 1, fill: "#7BE0B5" }, gRobot);
+    robotTube = el("rect", { x: 7, y: -19, width: 7, height: 14, rx: 3, fill: "transparent", stroke: "#fff", "stroke-width": 1.5, visibility: "hidden" }, gRobot);
+    drawObstacles(); drawExplored();
+    svg.addEventListener("click", onMapClick);
+  }
+
+  function drawStations() {
+    var font = "Manrope, sans-serif";
+    ["A", "B", "C"].forEach(function (k) {
+      var st = L.STATIONS[k], x = st.cell[0] * C, y = st.cell[1] * C, col = COLORS[st.tests];
+      var g = el("g", {}, gStations);
+      el("rect", { x: x + 2, y: y + 2, width: C - 4, height: C - 4, rx: 6, fill: "#fff", stroke: "#14213D", "stroke-width": 2 }, g);
+      el("rect", { x: x + 2, y: y + C - 9, width: C - 4, height: 7, rx: 3, fill: col }, g);
+      var t = el("text", { x: x + C / 2, y: y + 19, "text-anchor": "middle", "font-size": 13, "font-weight": 800, fill: "#14213D", "font-family": font }, g); t.textContent = k;
+      badge(k, x + C - 3, y + 4);
+      st.g = g;
+    });
+    var ce = L.STATIONS.centrifuge, x = ce.cell[0] * C, y = ce.cell[1] * C;
+    el("circle", { cx: x + C / 2, cy: y + C / 2, r: 13, fill: "#fff", stroke: "#14213D", "stroke-width": 2 }, gStations);
+    centBlades = el("g", {}, gStations);
+    [0, 120, 240].forEach(function (a) {
+      var r = a * Math.PI / 180;
+      el("circle", { cx: x + C / 2 + Math.cos(r) * 7, cy: y + C / 2 + Math.sin(r) * 7, r: 3, fill: "#5B6CD9" }, centBlades);
+    });
+    badge("centrifuge", x + C - 3, y + 4);
+    var fr = L.STATIONS.fridge; x = fr.cell[0] * C; y = fr.cell[1] * C;
+    el("rect", { x: x + 3, y: y - C + 4, width: C - 6, height: 2 * C - 8, rx: 5, fill: "#E8F1FA", stroke: "#14213D", "stroke-width": 2 }, gStations);
+    var ft = el("text", { x: x + C / 2, y: y + 6, "text-anchor": "middle", "font-size": 16, fill: "#2F6FA8" }, gStations); ft.textContent = "❄";
+    badge("fridge", x + C - 4, y - C + 8);
+    var dk = L.STATIONS.dock; x = dk.cell[0] * C; y = dk.cell[1] * C;
+    el("rect", { x: x + 3, y: y + 3, width: C - 6, height: C - 6, rx: 6, fill: "#EAF6F0", stroke: "#2E8B6E", "stroke-width": 2 }, gStations);
+    el("path", { d: "M" + (x + 18) + " " + (y + 7) + "l-7 10h6l-3 9 8-11h-6z", fill: "#2E8B6E" }, gStations);
+    // rack shelf
+    el("rect", { x: C + 2, y: C + 4, width: 6 * C - 4, height: C - 8, rx: 5, fill: "#F4F3EE", stroke: "#D8D5CB" }, gStations);
+  }
+  function badge(k, x, y) {
+    var g = el("g", { visibility: "hidden" }, gStations);
+    el("circle", { cx: x, cy: y, r: 7.5, fill: "#14213D", stroke: "#fff", "stroke-width": 1.5 }, g);
+    var t = el("text", { x: x, y: y + 3.5, "text-anchor": "middle", "font-size": 9.5, "font-weight": 800, fill: "#fff", "font-family": "Manrope, sans-serif" }, g);
+    badges[k] = { g: g, t: t };
+  }
+
+  function drawObstacles() {
+    gObs.innerHTML = "";
+    Object.keys(obstacles).forEach(function (kk) {
+      var p = kk.split(",").map(Number), x = p[0] * C, y = p[1] * C;
+      el("rect", { x: x + 1, y: y + 1, width: C - 2, height: C - 2, fill: "#FFF5D6" }, gObs);
+      el("path", { d: "M" + (x + 16) + " " + (y + 5) + "L" + (x + 27) + " " + (y + 26) + "H" + (x + 5) + "Z", fill: "#F2C14E", stroke: "#14213D", "stroke-width": 1.5, "stroke-linejoin": "round" }, gObs);
+      var t = el("text", { x: x + 16, y: y + 24, "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: "#14213D" }, gObs); t.textContent = "!";
+    });
+  }
+  function drawExplored() {
+    gExp.innerHTML = "";
+    if (!showSearch) return;
+    explored.forEach(function (p, i) {
+      el("rect", { x: p[0] * C + 4, y: p[1] * C + 4, width: C - 8, height: C - 8, rx: 4, fill: "#5B6CD9", opacity: (0.08 + 0.17 * i / Math.max(1, explored.length)).toFixed(3) }, gExp);
+    });
+  }
+
+  function render() {
+    // robot
+    var px = R.c[0], py = R.c[1];
+    if (R.next) { px += (R.next[0] - R.c[0]) * R.prog; py += (R.next[1] - R.c[1]) * R.prog; }
+    gRobot.setAttribute("transform", "translate(" + cx(px) + "," + cx(py) + ")");
+    if (R.carrying) { robotTube.setAttribute("fill", COLORS[S[R.carrying - 1].test]); robotTube.setAttribute("visibility", "visible"); }
+    else robotTube.setAttribute("visibility", "hidden");
+    // path
+    var pts = [];
+    if (R.path.length > 1) {
+      pts.push(cx(px) + "," + cx(py));
+      for (var i = R.next ? 1 : 1; i < R.path.length; i++) pts.push(cx(R.path[i][0]) + "," + cx(R.path[i][1]));
+    }
+    pathLine.setAttribute("points", pts.join(" "));
+    // walker
+    gWalker.setAttribute("visibility", W.on ? "visible" : "hidden");
+    var wx = W.c[0], wy = W.c[1];
+    if (W.next) { wx += (W.next[0] - W.c[0]) * W.prog; wy += (W.next[1] - W.c[1]) * W.prog; }
+    gWalker.setAttribute("transform", "translate(" + cx(wx) + "," + cx(wy) + ")");
+    centBlades.setAttribute("class", R.spinning ? "spin" : "");
+    renderTubes(); renderStats();
+  }
+
+  var tubeSig = "";
+  function renderTubes() {
+    var sig = S.map(function (s) { return s.where + (s.done ? 1 : 0); }).join("|");
+    if (sig === tubeSig) return; tubeSig = sig;
+    gTubes.innerHTML = "";
+    var counts = { A: 0, B: 0, C: 0, centrifuge: 0, fridge: 0 }, busy = { A: 0, B: 0, C: 0 };
+    S.forEach(function (s) {
+      if (s.where === "rack") {
+        var x = s.id * C, y = C;
+        el("rect", { x: x + 12, y: y + 6, width: 8, height: 18, rx: 4, fill: COLORS[s.test], stroke: s.urgent ? "#C8462F" : "none", "stroke-width": s.urgent ? 0 : 0 }, gTubes);
+        if (s.urgent) el("circle", { cx: x + 24, cy: y + 8, r: 3.5, fill: "#C8462F", stroke: "#fff", "stroke-width": 1 }, gTubes);
+        var t = el("text", { x: x + 6, y: y + 25, "font-size": 8, "font-weight": 800, fill: "#5E6676", "font-family": "Manrope, sans-serif" }, gTubes); t.textContent = s.bed;
+      } else if (counts[s.where] !== undefined) { counts[s.where]++; if (busy[s.where] !== undefined && !s.done) busy[s.where]++; }
+    });
+    Object.keys(counts).forEach(function (k) {
+      var b = badges[k]; b.g.setAttribute("visibility", counts[k] ? "visible" : "hidden"); b.t.textContent = counts[k];
+      if (L.STATIONS[k].g) L.STATIONS[k].g.setAttribute("class", busy[k] ? "busy" : "");
+    });
+  }
+
+  var lastStats = "";
+  function renderStats() {
+    var b = Math.max(0, Math.round(R.battery)), ready = S.filter(function (s) { return s.done; }).length;
+    var sig = [b, stats.dist, stats.rep, ready, R.status, R.mode].join("|");
+    if (sig === lastStats) return; lastStats = sig;
+    $("s-batt").textContent = b + "%";
+    $("battbar").querySelector("i").style.width = b + "%";
+    $("battbar").className = "batt" + (b < 30 ? " low" : "");
+    $("s-dist").textContent = stats.dist + " m";
+    $("s-rep").textContent = stats.rep;
+    $("s-res").textContent = ready + " / 6";
+    $("status").textContent = R.status;
+    $("pill").className = "pill " + R.mode;
+  }
+
+  function sampleStatus(s) {
+    if (s.where === "robot") return "On the robot";
+    if (s.where === "rack") return "Waiting at reception";
+    if (s.where === "fridge") return "Stored in the fridge";
+    if (s.where === "centrifuge") return s.spun ? "Spun, in the centrifuge" : "In the centrifuge";
+    if (s.done) return "Result ready (Analyser " + s.where + ")";
+    return "Testing on Analyser " + s.where + "…";
+  }
+  var sampSig = "";
+  function renderSamples() {
+    var sig = S.map(function (s) { return sampleStatus(s); }).join("|");
+    if (sig === sampSig) return; sampSig = sig;
+    $("samples").innerHTML = S.map(function (s) {
+      return "<tr><td class='num'>" + s.bed + "</td><td><span class='sw' style='background:" + COLORS[s.test] + "'></span>" + s.test + (s.urgent ? "<span class='tag'>URGENT</span>" : "") + "</td><td class='st" + (s.done ? " ready" : "") + "'>" + sampleStatus(s) + "</td></tr>";
+    }).join("");
+  }
+
+  function renderPlan() {
+    var ol = $("plan");
+    if (!plan.length) { ol.innerHTML = "<li class='done' style='list-style:none;display:block'>Nothing planned yet.</li>"; return; }
+    ol.innerHTML = plan.map(function (e) {
+      var notes = e.notes.map(function (n) { return "<span class='note" + (n.warn ? " warn" : "") + "'>" + n.text + "</span>"; }).join("");
+      return "<li class='" + e.status + "'><div>" + e.text + notes + "</div></li>";
+    }).join("");
+  }
+
+  function setReply(text, source) {
+    $("reply-text").textContent = text;
+    var b = $("parser");
+    if (source === "cloud") { b.textContent = "cloud LLM · Gemini"; b.className = "badge cloud"; }
+    else if (source === "thinking") { b.textContent = "thinking…"; b.className = "badge"; }
+    else { b.textContent = "on-device parser"; b.className = "badge"; }
+  }
+
+  // ---------------- understanding commands ----------------
+  var PLACES = ["A", "B", "C", "fridge", "centrifuge", "rack", "dock", "auto"];
+  function validSteps(steps) {
+    return Array.isArray(steps) && steps.length && steps.every(function (s) {
+      if (!s || (s.op !== "move" && s.op !== "goto")) return false;
+      if (PLACES.indexOf(s.to) < 0) return false;
+      if (s.op === "goto") return s.to !== "auto";
+      return Number.isInteger(s.sample) && s.sample >= 1 && s.sample <= 6 && s.to !== "dock";
+    });
+  }
+  function understand(text) {
+    var local = function () { var p = L.parse(text, S); p.source = "local"; return p; };
+    if (!LLM_ENDPOINT) return Promise.resolve(local());
+    var ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 7000);
+    return fetch(LLM_ENDPOINT, {
+      method: "POST", headers: { "content-type": "application/json" }, signal: ctl ? ctl.signal : undefined,
+      body: JSON.stringify({ text: text, samples: S.map(function (s) { return { id: s.id, bed: s.bed, test: s.test, urgent: s.urgent, where: s.where, done: s.done }; }) })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      clearTimeout(timer);
+      if (validSteps(j.steps)) return { steps: j.steps, unknown: j.unknown || [], source: "cloud" };
+      return local();
+    }).catch(function () { clearTimeout(timer); return local(); });
+  }
+
+  // Where each sample will be once everything already queued has run.
+  function projected() {
+    var p = S.map(function (s) { return { where: s.where, spun: s.spun, done: s.done }; });
+    plan.forEach(function (e) {
+      if (e.kind !== "move" || e.status === "done" || e.status === "skipped") return;
+      var q = p[e.id - 1]; q.where = e.dest; if (e.spin) q.spun = true;
+    });
+    return p;
+  }
+
+  function normalise(steps) {
+    var proj = projected(), out = [];
+    steps.forEach(function (st) {
+      if (st.op === "goto") {
+        out.push({ kind: "goto", to: st.to, text: st.to === "dock" ? "Go to the charging dock and charge" : "Drive to " + stName(st.to), notes: [], status: "queued" });
+        return;
+      }
+      var s = S[st.sample - 1], q = proj[st.sample - 1], notes = [];
+      var label = "Bed " + s.bed + " · " + s.test.toLowerCase() + (s.urgent ? "<span class='tag'>URGENT</span>" : "");
+      if (/^[ABC]$/.test(q.where)) {
+        out.push({ kind: "move", id: s.id, dest: q.where, text: label, notes: [{ text: "Already on Analyser " + q.where + ", so I'll skip it." }], status: "skipped" });
+        return;
+      }
+      var dest = st.to, right = L.TEST_TO[s.test];
+      if (dest === "auto") dest = right;
+      if (/^[ABC]$/.test(dest) && dest !== right) {
+        notes.push({ warn: true, text: "Bed " + s.bed + " is a " + s.test.toLowerCase() + ". Analyser " + dest + " runs " + L.STATIONS[dest].tests.toLowerCase() + ", so I'll use Analyser " + right + " instead." });
+        dest = right;
+      }
+      if (dest === q.where) {
+        out.push({ kind: "move", id: s.id, dest: dest, text: label, notes: [{ text: "Already in " + stName(dest) + "." }], status: "skipped" });
+        return;
+      }
+      var spin = /^[ABC]$/.test(dest) && s.needsSpin && !q.spun;
+      if (spin) notes.push({ text: "Chemistry tubes are spun in the centrifuge first." });
+      if (dest === "fridge" && s.urgent) notes.push({ warn: true, text: "This one is urgent. Storing it will delay the result." });
+      if (dest === "centrifuge" && !s.needsSpin) notes.push({ text: "Only chemistry tubes need spinning, but I'll do it." });
+      if (dest === "centrifuge") q.spun = true;
+      q.where = dest; if (spin) q.spun = true;
+      out.push({ kind: "move", id: s.id, dest: dest, spin: spin, text: label + " → " + (spin ? "centrifuge → " : "") + stName(dest), notes: notes, status: "queued" });
+    });
+    return out;
+  }
+
+  function submit(text) {
+    text = (text || "").trim(); if (!text) return;
+    if (LLM_ENDPOINT) setReply("Reading your request…", "thinking");
+    understand(text).then(function (res) {
+      if (!res.steps.length) {
+        setReply("I couldn't find a lab task in that. I can move samples (by bed, test type, “urgent”, “all” or “the rest”) to an analyser, the centrifuge, the fridge or reception, and I can go charge.", res.source);
+        log("Didn't understand: “" + text.replace(/</g, "&lt;") + "”");
+        return;
+      }
+      plan = plan.filter(function (e) { return e.status === "queued" || e.status === "active"; });
+      var added = normalise(res.steps);
+      plan = plan.concat(added);
+      var real = added.filter(function (e) { return e.status === "queued"; }).length;
+      var warns = added.reduce(function (n, e) { return n + e.notes.filter(function (x) { return x.warn; }).length; }, 0);
+      var msg = "Got it: " + real + " task" + (real === 1 ? "" : "s") + ".";
+      if (added.some(function (e) { return e.kind === "move" && S[e.id - 1].urgent; }) && real > 1) msg += " Urgent samples go first.";
+      if (warns) msg += " I changed something; see the note" + (warns > 1 ? "s" : "") + " below.";
+      if (res.unknown && res.unknown.length) msg += " I ignored “" + res.unknown.join("”, “").trim() + "”.";
+      setReply(msg, res.source);
+      log("Command: “" + text.replace(/</g, "&lt;") + "” → " + res.steps.length + " tool call" + (res.steps.length === 1 ? "" : "s") + (res.source === "cloud" ? " (cloud LLM)" : ""));
+      renderPlan();
+    });
+  }
+
+  // ---------------- execution ----------------
+  function pickupCell(s) { return s.where === "rack" ? [s.id, 2] : L.STATIONS[s.where].at.slice(); }
+  function destCell(e) { return e.dest === "rack" ? [e.id, 2] : L.STATIONS[e.dest].at.slice(); }
+  function dist(a, b) { var r = L.astar(a, b, obstacles); return r.path ? r.path.length - 1 : 99; }
+
+  function startNext() {
+    var e = plan.find(function (x) { return x.status === "queued"; });
+    if (!e) {
+      if (R.entry) { R.entry = null; }
+      R.mode = "idle"; R.status = eq(R.c, HOME) ? "Ready at the charging dock" : "Idle. Waiting for a task";
+      return;
+    }
+    e.status = "active"; R.entry = e; renderPlan();
+    var m = [], cells;
+    if (e.kind === "goto") {
+      var to = e.to === "rack" ? [3, 2] : L.STATIONS[e.to].at.slice();
+      m.push({ type: "go", to: to, label: "Driving to " + stName(e.to) });
+      if (e.to === "dock") m.push({ type: "charge" });
+    } else {
+      var s = S[e.id - 1];
+      if (s.where === "robot" || /^[ABC]$/.test(s.where)) { e.status = "skipped"; renderPlan(); R.entry = null; return; }
+      var a = pickupCell(s), b = destCell(e), ce = L.STATIONS.centrifuge.at;
+      m.push({ type: "go", to: a, label: "Collecting bed " + s.bed + " from " + stName(s.where) });
+      m.push({ type: "pick", id: s.id });
+      if (e.spin) { m.push({ type: "go", to: ce.slice(), label: "Taking bed " + s.bed + " to the centrifuge" }); m.push({ type: "spin", id: s.id }); }
+      m.push({ type: "go", to: b, label: "Delivering bed " + s.bed + " to " + stName(e.dest) });
+      m.push({ type: "drop", id: s.id, where: e.dest });
+      // battery check: there, (spin,) deliver, then home
+      cells = dist(R.c, a) + (e.spin ? dist(a, ce) + dist(ce, b) : dist(a, b)) + dist(b, HOME);
+      if (R.battery - cells * COST < 20 && !eq(R.c, HOME)) {
+        log("Battery " + Math.round(R.battery) + "%: not enough for this trip (" + cells + " m). Charging first.");
+        m.unshift({ type: "go", to: HOME.slice(), label: "Low battery. Heading to the dock" }, { type: "charge" });
+      } else if (R.battery - cells * COST < 20) {
+        m.unshift({ type: "charge" });
+      }
+    }
+    R.micro = m;
+    if (e.kind === "move") log("Starting: " + e.text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+  }
+
+  function finishEntry() {
+    if (R.entry) { R.entry.status = "done"; R.entry = null; renderPlan(); }
+  }
+
+  function planRoute(goal, withWalker) {
+    var blocked = Object.assign({}, obstacles);
+    if (withWalker && W.on) { blocked[key(W.c)] = 1; if (W.next) blocked[key(W.next)] = 1; }
+    delete blocked[key(R.c)];
+    var r = L.astar(R.c, goal, blocked);
+    explored = r.explored; drawExplored();
+    if (r.path) { R.path = r.path; return true; }
+    return false;
+  }
+  function walkerAt(p) { return W.on && (eq(W.c, p) || eq(W.next, p)); }
+
+  function stepRobot(dt) {
+    if (R.wait > 0) { R.wait -= dt; return; }
+    if (!R.micro.length) {
+      if (R.entry) finishEntry();
+      startNext();
+      if (!R.micro.length) return;
+    }
+    var m = R.micro[0];
+    if (m.type === "go") {
+      R.status = m.label; R.mode = "";
+      if (R.next) {
+        R.prog += dt * BASE;
+        if (R.prog >= 1) {
+          R.c = R.next; R.next = null; R.prog = 0; R.path.shift();
+          R.battery = Math.max(0, R.battery - COST); stats.dist++;
+        }
+        return;
+      }
+      if (eq(R.c, m.to)) { R.micro.shift(); R.path = []; return; }
+      if (!R.path.length || !eq(R.path[0], R.c) || !eq(R.path[R.path.length - 1], m.to)) {
+        if (!planRoute(m.to, true)) { R.status = "No route right now. Waiting"; R.mode = "wait"; R.wait = 0.5; return; }
+      }
+      var nx = R.path[1];
+      if (obstacles[key(nx)] || walkerAt(nx)) {
+        var before = R.path.length;
+        if (planRoute(m.to, true)) {
+          stats.rep++;
+          if (walkerAt(nx)) log("Nurse in the way. Going around (" + (R.path.length - 1) + " m left).");
+          nx = R.path[1];
+          if (walkerAt(nx) || obstacles[key(nx)]) { R.status = "Waiting for the path to clear"; R.mode = "wait"; R.wait = 0.4; return; }
+        } else { R.status = "Waiting for the path to clear"; R.mode = "wait"; R.wait = 0.4; return; }
+      }
+      R.next = nx; R.prog = 0;
+      return;
+    }
+    var s;
+    if (m.type === "pick") {
+      s = S[m.id - 1]; s.where = "robot"; R.carrying = m.id; R.micro.shift(); R.wait = 0.4;
+      R.status = "Picking up bed " + s.bed; log("Picked up bed " + s.bed + " (" + s.test.toLowerCase() + ").");
+      return;
+    }
+    if (m.type === "spin") {
+      if (m.left === undefined) { m.left = 2.5; R.spinning = true; R.status = "Spinning bed " + S[m.id - 1].bed + " in the centrifuge"; R.mode = "wait"; }
+      m.left -= dt;
+      if (m.left <= 0) { S[m.id - 1].spun = true; R.spinning = false; R.micro.shift(); log("Bed " + S[m.id - 1].bed + " spun."); }
+      return;
+    }
+    if (m.type === "drop") {
+      s = S[m.id - 1]; s.where = m.where; R.carrying = null; R.micro.shift(); R.wait = 0.4;
+      if (m.where === "centrifuge") s.spun = true;
+      if (/^[ABC]$/.test(m.where)) { s.readyAt = sim + 6; log("Bed " + s.bed + " loaded on Analyser " + m.where + "."); }
+      else log("Bed " + s.bed + " left in " + stName(m.where) + ".");
+      R.status = "Dropping off bed " + s.bed;
+      return;
+    }
+    if (m.type === "charge") {
+      R.status = "Charging " + Math.round(R.battery) + "%"; R.mode = "wait";
+      R.battery = Math.min(100, R.battery + 30 * dt);
+      if (R.battery >= 100) { R.micro.shift(); log("Fully charged."); }
+    }
+  }
+
+  function stepWalker(dt) {
+    if (!W.on) return;
+    if (W.next) {
+      W.prog += dt * 1.5;
+      if (W.prog >= 1) { W.c = W.next; W.next = null; W.prog = 0; }
+      return;
+    }
+    var n = [W.c[0] + W.dir, W.c[1]];
+    if (L.isWall(n[0], n[1]) || n[0] < 2 || n[0] > 21 || obstacles[key(n)]) { W.dir = -W.dir; return; }
+    if (eq(n, R.c) || eq(n, R.next)) return; // polite: waits for the robot
+    W.next = n; W.prog = 0;
+  }
+
+  function stepSamples() {
+    S.forEach(function (s) {
+      if (!s.done && /^[ABC]$/.test(s.where) && s.readyAt !== undefined && sim >= s.readyAt) {
+        s.done = true; log("Result ready: bed " + s.bed + " " + s.test.toLowerCase() + (s.urgent ? " (urgent)" : "") + ".");
+      }
+    });
+  }
+
+  var last = null;
+  function frame(t) {
+    if (last === null) last = t;
+    var dt = Math.min(0.1, (t - last) / 1000) * speed; last = t;
+    sim += dt;
+    // small sub-steps keep fast speeds smooth
+    var n = Math.ceil(dt / 0.05);
+    for (var i = 0; i < n; i++) { stepWalker(dt / n); stepRobot(dt / n); }
+    stepSamples();
+    render(); renderSamples();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------- input ----------------
+  function onMapClick(ev) {
+    var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    var p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    var x = Math.floor(p.x / C), y = Math.floor(p.y / C), kk = x + "," + y;
+    if (L.isWall(x, y) || L.FIXED[kk] || PROTECT[kk] || eq([x, y], R.c) || eq([x, y], R.next) || eq([x, y], W.c) || eq([x, y], W.next)) return;
+    if (obstacles[kk]) { delete obstacles[kk]; drawObstacles(); log("Wet floor sign removed."); return; }
+    obstacles[kk] = 1;
+    // never let a sign cut the lab in two: every stop must stay reachable
+    var cut = Object.keys(PROTECT).some(function (pk) { var q = pk.split(",").map(Number); return !L.astar(R.c, q, obstacles).path; });
+    if (cut) { delete obstacles[kk]; log("A sign there would block the only way through, so I left it out."); return; }
+    drawObstacles();
+    var onPath = R.path.slice(1).some(function (q) { return q[0] === x && q[1] === y; });
+    if (onPath && R.micro.length && R.micro[0].type === "go") {
+      var old = R.path.length - 1;
+      var keepNext = R.next;
+      if (keepNext) { // finish the current step first, replan from there
+        R.path = [R.c, keepNext];
+      } else if (planRoute(R.micro[0].to, true)) {
+        stats.rep++;
+        log("Wet floor on my route. Replanned: " + (R.path.length - 1) + " m instead of " + old + " m.");
+      }
+      if (keepNext) { stats.rep++; log("Wet floor on my route. Replanning."); }
+    } else log("Wet floor sign placed.");
+  }
+
+  $("cmd").addEventListener("submit", function (e) { e.preventDefault(); submit($("q").value); $("q").value = ""; });
+  $("examples").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip"); if (!b) return;
+    $("q").value = b.textContent; submit(b.textContent); $("q").value = "";
+  });
+  $("speed").addEventListener("input", function () { speed = SPEEDS[+this.value]; $("speed-v").textContent = speed + "×"; });
+  $("t-search").addEventListener("click", function () { showSearch = !showSearch; this.setAttribute("aria-pressed", showSearch); drawExplored(); });
+  $("t-nurse").addEventListener("click", function () {
+    W.on = !W.on; this.setAttribute("aria-pressed", W.on);
+    if (W.on) { W.c = [3, 6]; W.next = null; if (eq(W.c, R.c)) W.c = [12, 6]; }
+    log(W.on ? "A nurse is now walking the corridor." : "The corridor is clear.");
+  });
+  $("stop").addEventListener("click", function () {
+    plan.forEach(function (e) { if (e.status === "queued") e.status = "skipped"; });
+    // finish the current hand-off safely: drop what we carry back where it can go
+    renderPlan(); log("Stop pressed. Finishing the current step, then holding.");
+  });
+  $("clear").addEventListener("click", function () { obstacles = {}; drawObstacles(); log("All wet floor signs cleared."); });
+  $("reset").addEventListener("click", function () { tubeSig = sampSig = lastStats = ""; reset(); });
+
+  // voice input, where the browser supports it
+  try {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      var mic = $("mic"), rec = new SR(), listening = false;
+      rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+      mic.hidden = false;
+      mic.addEventListener("click", function () {
+        try { if (listening) rec.stop(); else rec.start(); } catch (e) {}
+      });
+      rec.onstart = function () { listening = true; mic.classList.add("on"); $("q").placeholder = "Listening…"; };
+      rec.onend = function () { listening = false; mic.classList.remove("on"); $("q").placeholder = "e.g. Take the urgent samples to the right analyser"; };
+      rec.onresult = function (e) { var t = e.results[0][0].transcript; $("q").value = t; submit(t); };
+    }
+  } catch (e) {}
+
+  reset();
+  requestAnimationFrame(frame);
+  window.__labbot = { get R() { return R; }, get S() { return S; }, get plan() { return plan; }, submit: submit, get stats() { return stats; }, setSpeed: function (v) { speed = v; } };
+})();
+</script>
+</body>
+</html>
