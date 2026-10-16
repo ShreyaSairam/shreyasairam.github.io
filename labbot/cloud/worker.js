@@ -44,7 +44,7 @@ function prompt(text, samples) {
 function clean(out) {
   const steps = (out.steps || []).filter(s =>
     s && (s.op === "move" || s.op === "goto") && PLACES.includes(s.to) &&
-    (s.op === "goto" ? s.to !== "auto" : Number.isInteger(s.sample) && s.sample >= 1 && s.sample <= 6 && s.to !== "dock")
+    (s.op === "goto" ? s.to !== "auto" : Number.isInteger(s.sample) && s.sample >= 1 && s.sample <= 999 && s.to !== "dock")
   ).slice(0, 20).map(s => s.op === "goto" ? { op: "goto", to: s.to } : { op: "move", sample: s.sample, to: s.to });
   const unknown = (out.unknown || []).filter(u => typeof u === "string").slice(0, 5).map(u => u.slice(0, 80));
   return { steps, unknown };

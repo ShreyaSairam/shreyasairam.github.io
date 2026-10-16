@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="LabBot: tell a hospital lab robot what to do in plain English. It plans its route with A*, goes around obstacles and people, and charges itself.">
+<meta name="description" content="LabBot: tell a hospital lab robot what to do in plain English, or run a busy lab shift against the clock. A* route planning, live replanning and an optional Gemini parser.">
 <title>LabBot: Lab Robot</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,6 @@
 :root{
   --paper:#F7F7F4; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --line:#E5E3DC; --soft:#F0EFEA;
   --ok:#2E8B6E; --amber:#C99A1E; --red:#C8462F; --acc:#5B6CD9;
-  --blood:#C8462F; --chem:#5B6CD9; --urine:#C99A1E;
   --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   color-scheme:light;
 }
@@ -28,10 +27,13 @@ button{cursor:pointer}
 header{display:flex;align-items:center;gap:14px;padding-block:16px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem}
 .mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.switch{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:2px}
+.switch button{border:0;background:none;color:var(--muted);font-weight:700;font-size:.88rem;padding:7px 14px;border-radius:9px}
+.switch button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,33,61,.12)}
 header .home{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
 header .code{color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
 h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-spacing:-.02em}
-.lede{margin:0 0 18px;color:var(--muted);max-width:760px}
+.lede{margin:0 0 18px;color:var(--muted);max-width:780px}
 .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
 .lbl{font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -42,14 +44,48 @@ h1{font-size:clamp(1.6rem,3.4vw,2.3rem);margin:6px 0 4px;font-weight:800;letter-
 .tog[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .btn{border:0;background:var(--ink);color:#fff;border-radius:12px;padding:10px 16px;font-weight:700}
 .btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.go{background:var(--ok)}
+
+/* top strip above the map */
+.top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pill{background:var(--ink);color:#fff;border-radius:999px;padding:7px 13px;font-size:.84rem;font-weight:700;display:flex;gap:8px;align-items:center;max-width:100%}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#7BE0B5;flex:none}
+.pill.wait .dot{background:#F2C14E}
+.pill.idle .dot{background:#9AA3B5}
+
+/* shift HUD */
+.cta{display:flex;gap:14px;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#14213D,#26356A);color:#fff;border-radius:14px;padding:12px 14px;flex-wrap:wrap}
+.cta b{font-size:.98rem}
+.cta p{margin:2px 0 0;font-size:.84rem;color:#C9CFE3;max-width:560px}
+.hud{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr)) auto;gap:8px;align-items:stretch}
+.hud .clock{background:var(--ink);color:#fff;border-radius:12px;padding:8px 14px;display:grid;align-content:center}
+.hud .clock b{font-family:var(--mono);font-size:1.5rem;font-weight:500;line-height:1}
+.hud .clock span{font-size:.7rem;color:#C9CFE3;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.hud .k{background:var(--soft);border-radius:12px;padding:8px 10px}
+.hud .k b{display:block;font-size:1.15rem;font-weight:800}
+.hud .k span{font-size:.72rem;color:var(--muted);font-weight:600}
+.hud .k.bad b{color:var(--red)}
+.hud .side{display:grid;gap:6px;align-content:center}
+.timebar{height:4px;background:#E2E0D8;border-radius:3px;overflow:hidden}
+.timebar i{display:block;height:100%;background:var(--acc);width:0}
 
 /* map */
 .mapbox{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff}
 #map{display:block;width:100%;height:auto;cursor:crosshair;touch-action:manipulation}
-.pill{background:var(--ink);color:#fff;border-radius:999px;padding:7px 13px;font-size:.84rem;font-weight:700;display:flex;gap:8px;align-items:center;justify-self:start;max-width:100%}
-.pill .dot{width:8px;height:8px;border-radius:50%;background:#7BE0B5;flex:none}
-.pill.wait .dot{background:#F2C14E}
-.pill.idle .dot{background:#9AA3B5}
+.toast{position:absolute;left:50%;bottom:12px;transform:translate(-50%,8px);background:#fff;border:1px solid var(--line);box-shadow:0 8px 24px rgba(20,33,61,.18);border-radius:999px;padding:7px 14px;font-size:.84rem;font-weight:700;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.warn{border-color:#F2C14E;background:#FFF8E3}
+.toast.alert{border-color:var(--red);background:#FCECE8;color:#8E2E1D}
+.report{position:absolute;inset:0;background:rgba(247,247,244,.94);display:grid;place-items:center;padding:14px;overflow:auto}
+.report .box{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(20,33,61,.18);padding:18px;max-width:520px;width:100%;display:grid;gap:10px}
+.report h3{margin:0;font-size:1.3rem}
+.report .grade{font-size:.78rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--acc)}
+.report .nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.report .nums div{background:var(--soft);border-radius:10px;padding:8px}
+.report .nums b{display:block;font-size:1.15rem}
+.report .nums span{font-size:.72rem;color:var(--muted);font-weight:600}
+.report ul{margin:0;padding-left:18px;font-size:.88rem;display:grid;gap:4px}
+.report .best{font-size:.8rem;color:var(--muted)}
 .hint{font-size:.82rem;color:var(--muted)}
 .bar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .speed{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:600;color:var(--muted)}
@@ -81,17 +117,20 @@ ol.plan li.active::before{background:var(--ink);color:#fff}
 ol.plan li.done{color:var(--muted)}
 ol.plan li.done::before{content:"✓";background:var(--ok);color:#fff}
 ol.plan li.skipped{color:var(--muted);text-decoration:line-through}
+ol.plan li.empty{display:block;color:var(--muted)}
+ol.plan li.empty::before{display:none}
 .note{display:block;font-size:.8rem;margin-top:3px;color:var(--muted);text-decoration:none}
 .note.warn{color:#9A3A26;font-weight:600}
 .tag{font-size:.68rem;font-weight:800;color:var(--red);border:1px solid var(--red);border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:1px}
-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.tag.auto{color:var(--acc);border-color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;table-layout:fixed}
 th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:4px 6px;border-bottom:1px solid var(--line)}
-td{padding:6px;border-bottom:1px solid var(--soft);overflow-wrap:anywhere}
-table{table-layout:fixed}
 th:first-child{width:44px}
+td{padding:6px;border-bottom:1px solid var(--soft);overflow-wrap:anywhere}
 .sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
 .st{font-weight:600}
 .st.ready{color:var(--ok)}
+.st.late{color:var(--red)}
 ul.log{list-style:none;margin:0;padding:0;max-height:170px;overflow:auto;font-family:var(--mono);font-size:.76rem;display:grid;gap:3px}
 ul.log li{color:var(--muted);overflow-wrap:anywhere}
 ul.log li b{color:var(--ink);font-weight:500}
@@ -106,11 +145,21 @@ footer a{color:inherit}
 @keyframes sp{to{transform:rotate(360deg)}}
 #map .busy{animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.45}}
-@media (prefers-reduced-motion:reduce){#map .spin,#map .busy{animation:none}}
+#map .pop{animation:pop .5s ease-out}
+@keyframes pop{0%{opacity:0}60%{opacity:1}}
+@media (prefers-reduced-motion:reduce){#map .spin,#map .busy,#map .pop{animation:none}}
 
 @media (max-width:960px){
   .layout{grid-template-columns:minmax(0,1fr)}
   .how{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .hud{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hud .clock{grid-column:1/-1;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+  .hud .side{grid-column:1/-1;grid-template-columns:1fr}
+  .report .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .report{position:static;background:var(--soft);padding:10px}
+  .report .box{box-shadow:none}
 }
 @media (max-width:520px){
   .wrap{padding-inline:16px}
@@ -124,18 +173,35 @@ footer a{color:inherit}
 <div class="wrap">
   <header>
     <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9.5 13h0M14.5 13h0"/><circle cx="12" cy="3.5" r="1"/></svg></span>LabBot</div>
+    <nav class="switch" aria-label="Mode"><button type="button" id="m-free" aria-pressed="true">Free play</button><button type="button" id="m-shift" aria-pressed="false">Shift challenge</button></nav>
     <a class="code" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/labbot">Code</a>
     <a class="home" href="../">Portfolio</a>
   </header>
 
-  <h1>Tell the lab robot what to do</h1>
-  <p class="lede">LabBot carries patient samples around a hospital lab. Type or say a task in plain English. It turns your words into a plan, finds its route with A*, goes around wet floors and people, and charges itself when the battery runs low.</p>
+  <h1 id="title">Tell the lab robot what to do</h1>
+  <p class="lede" id="lede">LabBot carries patient samples around a hospital lab. Type or say a task in plain English. It turns your words into a plan, finds its route with A*, goes around wet floors and people, and charges itself when the battery runs low.</p>
 
   <div class="layout">
     <section class="card" aria-label="Lab map">
-      <div class="pill idle" id="pill" aria-live="polite"><span class="dot"></span><span id="status">Ready at the charging dock</span></div>
+      <div class="cta" id="cta">
+        <div><b>Think you can run a busy lab?</b><p>Take a 3 minute shift. Samples keep arriving, urgent ones must reach an analyser within 50 seconds, and things go wrong.</p></div>
+        <button class="btn go" type="button" id="cta-go">Start a shift</button>
+      </div>
+      <div class="hud" id="hud" hidden>
+        <div class="clock"><b class="num" id="h-clock">3:00</b><span>Shift left</span></div>
+        <div class="k"><b class="num" id="h-ontime">–</b><span>On time</span></div>
+        <div class="k"><b class="num" id="h-tat">–</b><span>Avg turnaround</span></div>
+        <div class="k"><b class="num" id="h-done">0</b><span>Delivered</span></div>
+        <div class="k" id="h-late-k"><b class="num" id="h-late">0</b><span>Late</span></div>
+        <div class="side"><button class="tog" id="t-auto" aria-pressed="true" type="button">Autopilot on</button><div class="timebar"><i id="h-bar"></i></div></div>
+      </div>
+      <div class="top">
+        <div class="pill idle" id="pill" aria-live="polite"><span class="dot"></span><span id="status">Ready at the charging dock</span></div>
+      </div>
       <div class="mapbox">
         <svg id="map" viewBox="0 0 768 480" role="img" aria-label="Map of the lab with the robot, stations and sample rack"></svg>
+        <div class="toast" id="toast" role="status"></div>
+        <div class="report" id="report" hidden></div>
       </div>
       <div class="bar">
         <p class="hint" style="margin:0">Tap the floor to drop a <b>wet floor</b> sign. LabBot replans around it.</p>
@@ -156,7 +222,7 @@ footer a{color:inherit}
         <div class="stat"><b class="num" id="s-batt">100%</b><span>Battery</span><div class="batt" id="battbar"><i style="width:100%"></i></div></div>
         <div class="stat"><b class="num" id="s-dist">0 m</b><span>Distance driven</span></div>
         <div class="stat"><b class="num" id="s-rep">0</b><span>Route replans</span></div>
-        <div class="stat"><b class="num" id="s-res">0 / 6</b><span>Results ready</span></div>
+        <div class="stat"><b class="num" id="s-res">0</b><span>Results ready</span></div>
       </div>
     </section>
 
@@ -167,18 +233,13 @@ footer a{color:inherit}
         <button class="mic" id="mic" type="button" aria-label="Speak a command" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
         <button class="btn" type="submit">Send</button>
       </form>
-      <div class="examples" id="examples">
-        <button class="chip" type="button">Take the urgent blood sample from bed 4 to analyser B, then put the rest in the fridge</button>
-        <button class="chip" type="button">Deliver all samples</button>
-        <button class="chip" type="button">Run the chemistry samples, then go charge</button>
-        <button class="chip" type="button">Take bed 3 to the fridge and go to the centrifuge</button>
-      </div>
+      <div class="examples" id="examples"></div>
       <div class="reply" id="reply">
         <div class="who">LabBot <span class="badge" id="parser">on-device parser</span></div>
-        <div id="reply-text">Six samples are waiting in the reception rack. Two are urgent. Tell me what to do with them.</div>
+        <div id="reply-text"></div>
       </div>
       <div class="lbl">Plan</div>
-      <ol class="plan" id="plan"><li class="done" style="list-style:none">Nothing planned yet.</li></ol>
+      <ol class="plan" id="plan"></ol>
       <div class="lbl">Samples</div>
       <table><thead><tr><th>Bed</th><th>Test</th><th>Status</th></tr></thead><tbody id="samples"></tbody></table>
       <div class="lbl">Robot log</div>
@@ -187,9 +248,9 @@ footer a{color:inherit}
   </div>
 
   <div class="how">
-    <div class="card"><h3>1. Language to tool calls</h3><p>A parser turns your sentence into structured calls like <code>move(sample 4, Analyser A)</code>. It checks them against lab rules first, so a blood count sent to the chemistry analyser gets corrected. A cloud LLM (Gemini) can plug in through a small worker; if it is off or slow, the on-device parser takes over.</p></div>
-    <div class="card"><h3>2. Planning the route</h3><p>Each trip is planned with A* on a grid of the lab. Turn on “Show A* search” to see which cells it explored. A wet floor sign or a nurse in the way triggers a replan from wherever the robot is.</p></div>
-    <div class="card"><h3>3. Running the job</h3><p>Urgent samples go first. Chemistry tubes are spun in the centrifuge before testing. Before each trip LabBot checks it has enough battery to get there and back to the dock, and charges first if not.</p></div>
+    <div class="card"><h3>1. Language to tool calls</h3><p>A parser turns your sentence into structured calls like <code>move(bed 4, Analyser A)</code>. It checks them against lab rules first, so a blood count sent to the chemistry analyser gets corrected. A cloud LLM (Gemini) can plug in through a small worker; if it is off or slow, the on-device parser takes over.</p></div>
+    <div class="card"><h3>2. Planning the route</h3><p>Each trip is planned with A* on a grid of the lab. Turn on “Show A* search” to see which cells it explored. A wet floor sign, a spill or a nurse in the way triggers a replan from wherever the robot is.</p></div>
+    <div class="card"><h3>3. Running a shift</h3><p>In the shift challenge, turnaround time is measured the way labs measure it: from arrival to loading on the analyser. Autopilot always takes the sample closest to missing its deadline. Turn it off and see if you can beat it.</p></div>
   </div>
   <footer>A simulation built for my portfolio, inspired by how hospital labs move samples between analysers. Not a real robot controller. <a href="../">Back to portfolio</a></footer>
 </div>
@@ -204,11 +265,15 @@ footer a{color:inherit}
 
   var L = window.LabCore, C = 32, NS = "http://www.w3.org/2000/svg";
   var COLORS = { "Blood count": "#C8462F", "Chemistry": "#5B6CD9", "Urine": "#C99A1E" };
-  var SPEEDS = [0.5, 1, 2, 4], BASE = 3.2, COST = 0.6, HOME = L.STATIONS.dock.at;
+  var SPEEDS = [0.5, 1, 2, 4], BASE = 3.6, COST = 0.35, HOME = L.STATIONS.dock.at;
+  var TARGET = { urgent: 50, routine: 120 }, SHIFT_LEN = 180;
+  var EX_FREE = ["Take the urgent blood sample from bed 4 to analyser B, then put the rest in the fridge", "Deliver all samples", "Run the chemistry samples, then go charge", "Take bed 3 to the fridge and go to the centrifuge"];
+  var EX_SHIFT = ["Take the urgent samples to the right analyser", "Deliver all samples", "Run the chemistry samples first", "Go charge"];
   var $ = function (id) { return document.getElementById(id); };
   var svg = $("map");
 
-  var S, R, W, plan, obstacles, explored, showSearch = false, speed = 1, sim = 0, stats;
+  var mode = "free", S, R, W, plan, obstacles, explored, showSearch = false, speed = 1, sim = 0, stats, shift = null, cal = {};
+  var store = { get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 
   function key(p) { return p[0] + "," + p[1]; }
   function eq(a, b) { return a && b && a[0] === b[0] && a[1] === b[1]; }
@@ -219,44 +284,217 @@ footer a{color:inherit}
     return e;
   }
   function cx(x) { return x * C + C / 2; }
+  function byId(id) { return L.byId(S, id); }
   function stName(w) { return w === "rack" ? "reception" : L.STATIONS[w].name; }
-  function clock() { var t = Math.floor(sim); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
+  function fmt(t) { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); }
+  function clock() { var t = Math.floor(shift ? shift.t : sim); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
+  function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
   function log(msg) {
     var li = document.createElement("li");
     li.innerHTML = "<b>" + clock() + "</b> " + msg;
     var ul = $("log"); ul.insertBefore(li, ul.firstChild);
     while (ul.children.length > 60) ul.removeChild(ul.lastChild);
   }
+  var toastTimer;
+  function toast(msg, kind) {
+    var t = $("toast"); t.textContent = msg; t.className = "toast show" + (kind ? " " + kind : "");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.className = "toast" + (kind ? " " + kind : ""); }, 3200);
+  }
+  function say(text) { R.bubble = { text: text, until: sim + 1.8 }; }
+  function targetOf(s) { return s.urgent ? TARGET.urgent : TARGET.routine; }
 
-  // Cells that must stay clear: stops, rack pick-up cells.
+  // Cells that must stay clear: stops and rack pick-up cells.
   var PROTECT = {};
   Object.keys(L.STATIONS).forEach(function (k) { PROTECT[key(L.STATIONS[k].at)] = 1; });
   for (var k = 1; k <= 6; k++) PROTECT[k + ",2"] = 1;
+  function cutsLab(extra) {
+    var o = Object.assign({}, obstacles, extra || {});
+    return Object.keys(PROTECT).some(function (pk) { var q = pk.split(",").map(Number); return !L.astar(R.c, q, o).path; });
+  }
 
-  function reset() {
-    S = L.freshSamples();
-    R = { c: HOME.slice(), next: null, prog: 0, path: [], micro: [], entry: null, wait: 0, battery: 100, carrying: null, status: "Ready at the charging dock", mode: "idle", spinning: false };
-    W = W ? { c: [3, 6], dir: 1, next: null, prog: 0, on: W.on } : { c: [3, 6], dir: 1, next: null, prog: 0, on: false };
-    plan = []; obstacles = {}; explored = []; sim = 0;
-    stats = { dist: 0, rep: 0 };
-    $("log").innerHTML = "";
-    drawStatic(); renderPlan(); renderSamples();
-    setReply("Six samples are waiting in the reception rack. Two are urgent. Tell me what to do with them.", null);
-    log("LabBot online at the charging dock.");
+  // Seeded random numbers, so “same shift again” really is the same shift.
+  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  function reset(newMode, seed) {
+    if (newMode) mode = newMode;
+    R = { c: HOME.slice(), next: null, prog: 0, path: [], micro: [], entry: null, wait: 0, battery: 100, carrying: null, status: "Ready at the charging dock", mode: "idle", spinning: false, bubble: null, dir: [1, 0] };
+    W = { c: [3, 6], dir: 1, next: null, prog: 0, on: W ? W.on : false };
+    plan = []; obstacles = {}; explored = []; sim = 0; cal = {};
+    stats = { dist: 0, rep: 0, charge: 0 };
+    $("log").innerHTML = ""; $("report").hidden = true;
+    tubeSig = sampSig = lastStats = hudSig = "";
+    if (mode === "shift") {
+      seed = seed || Math.floor(Math.random() * 1e9);
+      var r = rng(seed);
+      shift = { seed: seed, r: r, t: 0, over: false, auto: shift ? shift.auto : true, nextId: 1, nextAt: 0, beds: {}, spillAt: 35 + r() * 35, calAt: 80 + r() * 50, calK: ["A", "B", "C"][Math.floor(r() * 3)], spill: null };
+      W.on = true;
+      S = [];
+      for (var i = 0; i < 3; i++) arrive(true);
+      shift.nextAt = 8 + r() * 8;
+      if (speed < 2) setSpeed(2);
+    } else {
+      shift = null; S = L.freshSamples();
+    }
+    applyMode(); drawStatic(); renderPlan(); renderSamples(); renderHud();
+    if (mode === "shift") {
+      setReply("Shift started. Samples will keep arriving at reception. " + (shift.auto ? "Autopilot is on: I'll pick the most pressing sample each time. Turn it off to give the orders yourself." : "Autopilot is off, so I'll wait for your orders."), null);
+      log("Shift started (seed " + seed + ").");
+    } else {
+      setReply("Six samples are waiting in the reception rack. Two are urgent. Tell me what to do with them.", null);
+      log("LabBot online at the charging dock.");
+    }
+  }
+
+  function applyMode() {
+    var sh = mode === "shift";
+    $("m-free").setAttribute("aria-pressed", !sh); $("m-shift").setAttribute("aria-pressed", sh);
+    $("cta").hidden = sh; $("hud").hidden = !sh;
+    $("title").textContent = sh ? "Run the lab for one shift" : "Tell the lab robot what to do";
+    $("lede").textContent = sh
+      ? "Samples arrive from the wards every few seconds. Urgent ones must be on an analyser within 50 seconds, routine ones within 2 minutes. Expect a spill, an analyser going down for calibration and a busy corridor. Let autopilot run it, or switch it off and give the orders yourself."
+      : "LabBot carries patient samples around a hospital lab. Type or say a task in plain English. It turns your words into a plan, finds its route with A*, goes around wet floors and people, and charges itself when the battery runs low.";
+    $("examples").innerHTML = (sh ? EX_SHIFT : EX_FREE).map(function (t) { return '<button class="chip" type="button">' + t + "</button>"; }).join("");
+    $("t-nurse").setAttribute("aria-pressed", W.on);
+    $("t-auto").setAttribute("aria-pressed", !!(shift && shift.auto));
+    $("t-auto").textContent = shift && shift.auto ? "Autopilot on" : "Autopilot off";
+  }
+
+  // ---------------- shift: arrivals, events, scoring ----------------
+  function freeSlot() {
+    var used = {};
+    S.forEach(function (s) { if (s.where === "rack") used[s.slot] = 1; });
+    plan.forEach(function (e) { if (e.reserve && e.status !== "done" && e.status !== "skipped") used[e.reserve] = 1; });
+    for (var i = 1; i <= 6; i++) if (!used[i]) return i;
+    return 0;
+  }
+  function arrive(quiet) {
+    var slot = freeSlot();
+    if (!slot) {
+      shift.nextAt = shift.t + 3;
+      if (!quiet && !(shift.fullAt > shift.t - 12)) { shift.fullAt = shift.t; toast("Rack full. A ward sample is waiting at the hatch.", "warn"); log("Rack full, samples held at the hatch."); }
+      return;
+    }
+    var r = shift.r, bed;
+    do { bed = 1 + Math.floor(r() * 30); } while (shift.beds[bed]);
+    shift.beds[bed] = 1;
+    var tests = ["Blood count", "Blood count", "Chemistry", "Urine"];
+    var s = L.makeSample(shift.nextId++, bed, tests[Math.floor(r() * tests.length)], r() < 0.3, slot);
+    s.arrive = shift.t; s.fresh = sim;
+    S.push(s);
+    if (!quiet) {
+      if (s.urgent) { toast("Urgent " + s.test.toLowerCase() + " from bed " + bed + ". 50 s to get it on " + "Analyser " + L.TEST_TO[s.test] + ".", "alert"); }
+      log("New " + (s.urgent ? "URGENT " : "") + s.test.toLowerCase() + " sample from bed " + bed + ".");
+    }
+  }
+  function stepShift(dt) {
+    if (!shift || shift.over) return;
+    shift.t += dt;
+    if (shift.t >= shift.nextAt && shift.t < SHIFT_LEN - 25) { arrive(false); if (shift.t >= shift.nextAt) shift.nextAt = shift.t + 10 + shift.r() * 8; }
+    // spill in the corridor
+    if (!shift.spill && shift.t >= shift.spillAt) {
+      var cands = [];
+      for (var x = 3; x <= 20; x++) for (var y = 5; y <= 6; y++) cands.push([x, y]);
+      for (var i = 0; i < 30; i++) {
+        var c = cands[Math.floor(shift.r() * cands.length)], kk = key(c), extra = {};
+        extra[kk] = 1;
+        if (!eq(c, R.c) && !eq(c, R.next) && !eq(c, W.c) && !eq(c, W.next) && !obstacles[kk] && !cutsLab(extra)) {
+          obstacles[kk] = "spill"; shift.spill = { k: kk, until: shift.t + 30 }; drawObstacles();
+          toast("Spill in the corridor. Cleaners will take 30 s.", "warn"); log("Spill reported in the corridor.");
+          replanIfOnPath(c, "Spill on my route");
+          break;
+        }
+      }
+      if (!shift.spill) shift.spill = { k: null, until: 0 };
+    }
+    if (shift.spill && shift.spill.k && shift.t >= shift.spill.until) { delete obstacles[shift.spill.k]; shift.spill.k = null; drawObstacles(); log("Spill cleaned up."); }
+    // analyser calibration
+    if (shift.calAt && shift.t >= shift.calAt) {
+      cal[shift.calK] = shift.t + 20; toast("Analyser " + shift.calK + " is calibrating for 20 s.", "warn"); log("Analyser " + shift.calK + " paused for calibration.");
+      shift.calAt = 0;
+    }
+    Object.keys(cal).forEach(function (k) { if (shift.t >= cal[k]) { delete cal[k]; log("Analyser " + k + " is back online."); } });
+    if (shift.t >= SHIFT_LEN) endShift();
+  }
+  function shiftNumbers() {
+    var loaded = S.filter(function (s) { return s.loaded !== undefined; });
+    var late = loaded.filter(function (s) { return s.loaded - s.arrive > targetOf(s); });
+    var waiting = S.filter(function (s) { return s.loaded === undefined; });
+    var overdue = waiting.filter(function (s) { return shift.t - s.arrive > targetOf(s); });
+    var avg = loaded.length ? loaded.reduce(function (a, s) { return a + s.loaded - s.arrive; }, 0) / loaded.length : null;
+    var counted = loaded.length + overdue.length;
+    var onTime = counted ? (loaded.length - late.length) / counted : null;
+    return { loaded: loaded, late: late, waiting: waiting, overdue: overdue, avg: avg, onTime: onTime };
+  }
+  function endShift() {
+    shift.over = true; shift.t = SHIFT_LEN;
+    R.micro = []; R.next = null; R.path = []; R.spinning = false;
+    plan.forEach(function (e) { if (e.status === "queued" || e.status === "active") e.status = "skipped"; });
+    renderPlan();
+    var n = shiftNumbers(), missed = n.overdue.length, lateAll = n.late.length + missed;
+    var total = n.loaded.length + missed; // samples still inside their deadline when the shift ends don't count against you
+    var pct = total ? Math.round(100 * (n.loaded.length - n.late.length) / total) : 0;
+    var grade = pct >= 90 ? "Smooth shift" : pct >= 70 ? "Busy, but under control" : pct >= 45 ? "The backlog is winning" : "Rough shift";
+    // where did the time go?
+    var waitAvg = avgOf(n.loaded, function (s) { return s.picked - s.arrive; }), rideAvg = avgOf(n.loaded, function (s) { return s.loaded - s.picked; });
+    var ins = [];
+    if (waitAvg !== null && rideAvg !== null) {
+      ins.push(waitAvg > rideAvg
+        ? "Most of the delay was waiting in the rack (" + Math.round(waitAvg) + " s on average) rather than driving (" + Math.round(rideAvg) + " s). One robot is the bottleneck."
+        : "Driving took longer (" + Math.round(rideAvg) + " s on average) than waiting in the rack (" + Math.round(waitAvg) + " s). Shorter routes would help most.");
+    }
+    var lateChem = n.late.filter(function (s) { return s.test === "Chemistry"; }).length;
+    if (lateChem && lateChem >= n.late.length / 2) ins.push("Chemistry was late most often. The centrifuge stop adds time to every chemistry tube.");
+    var urgLate = n.late.filter(function (s) { return s.urgent; }).length + n.overdue.filter(function (s) { return s.urgent; }).length;
+    ins.push(urgLate ? urgLate + " urgent sample" + (urgLate > 1 ? "s were" : " was") + " late or never made it. Those are the ones a lab really worries about." : "Every urgent sample made it on time.");
+    if (stats.calWait > 3) ins.push("Waiting for a calibrating analyser held LabBot for " + Math.round(stats.calWait) + " s while other tubes queued up.");
+    if (stats.charge > 5) ins.push("Charging took " + Math.round(stats.charge) + " s of the shift.");
+    if (stats.rep) ins.push("LabBot replanned its route " + stats.rep + " time" + (stats.rep > 1 ? "s" : "") + " around spills, signs and people.");
+    var who = shift.auto ? "Autopilot" : "You";
+    var best = store.get("labbot.best") || {}, bk = shift.auto ? "auto" : "manual", prev = best[bk];
+    var beat = prev === undefined || pct > prev;
+    if (beat) { best[bk] = pct; store.set("labbot.best", best); }
+    var bestLine = (beat && prev !== undefined ? "New best for " + (shift.auto ? "autopilot" : "manual control") + ". " : "") +
+      (best.auto !== undefined ? "Autopilot best: " + best.auto + "% on time. " : "") + (best.manual !== undefined ? "Your best: " + best.manual + "% on time." : "");
+    var box = $("report");
+    box.innerHTML = '<div class="box"><span class="grade">' + grade + '</span><h3>' + who + ' got ' + pct + '% of samples on time</h3>' +
+      '<div class="nums"><div><b>' + n.loaded.length + '</b><span>Delivered</span></div><div><b>' + lateAll + '</b><span>Late</span></div><div><b>' + (n.avg === null ? "–" : Math.round(n.avg) + " s") + '</b><span>Avg turnaround</span></div><div><b>' + stats.dist + ' m</b><span>Driven</span></div></div>' +
+      '<ul>' + ins.map(function (x) { return "<li>" + x + "</li>"; }).join("") + '</ul>' +
+      '<div class="best">' + bestLine + '</div>' +
+      '<div class="row"><button class="btn" type="button" data-r="same">Same shift, autopilot ' + (shift.auto ? "off" : "on") + '</button><button class="btn ghost" type="button" data-r="new">New shift</button><button class="btn ghost" type="button" data-r="free">Free play</button></div></div>';
+    box.hidden = false;
+    log("Shift over: " + pct + "% on time.");
+    R.status = "Shift over"; R.mode = "idle";
+  }
+  function avgOf(xs, f) { var v = xs.filter(function (s) { return s.picked !== undefined; }).map(f); return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null; }
+
+  function autopilot() {
+    if (!shift || !shift.auto || shift.over) return false;
+    var busy = {};
+    plan.forEach(function (e) { if (e.kind === "move" && (e.status === "queued" || e.status === "active")) busy[e.id] = 1; });
+    var cands = L.pendingOf(S).filter(function (s) { return !busy[s.id] && s.where !== "robot"; });
+    if (!cands.length) {
+      if (R.battery < 60 && !eq(R.c, HOME)) { addEntries([{ op: "goto", to: "dock" }], true); return true; }
+      return false;
+    }
+    // skip samples whose analyser is calibrating, if there is anything else to do
+    var ready = cands.filter(function (s) { return !cal[L.TEST_TO[s.test]]; });
+    if (ready.length) cands = ready;
+    cands.sort(function (a, b) { return (targetOf(a) - (shift.t - a.arrive)) - (targetOf(b) - (shift.t - b.arrive)); });
+    addEntries([{ op: "move", sample: cands[0].id, to: "auto" }], true);
+    return true;
   }
 
   // ---------------- drawing ----------------
-  var gObs, gExp, pathLine, gStations, gTubes, gWalker, gRobot, robotTube, centBlades, badges = {};
+  var gObs, gExp, pathLine, gStations, gTubes, gWalker, gRobot, robotTube, eyes, gBubble, bubbleRect, bubbleText, centBlades, badges = {}, calTags = {};
 
   function drawStatic() {
-    svg.innerHTML = "";
+    svg.innerHTML = ""; badges = {}; calTags = {};
     var defs = el("defs", {}, svg);
     var pat = el("pattern", { id: "grid", width: C, height: C, patternUnits: "userSpaceOnUse" }, defs);
     el("path", { d: "M" + C + " 0H0V" + C, fill: "none", stroke: "#EEECE6", "stroke-width": 1 }, pat);
     el("rect", { x: 0, y: 0, width: 768, height: 480, fill: "#fff" }, svg);
     el("rect", { x: C, y: 5 * C, width: 22 * C, height: 2 * C, fill: "#F4F3EE" }, svg);
     el("rect", { x: 0, y: 0, width: 768, height: 480, fill: "url(#grid)" }, svg);
-    // room labels
     [["RECEPTION", 3.5, 3.55], ["SPIN ROOM", 11.5, 3.55], ["ANALYSERS", 19, 3.55], ["CORRIDOR", 12, 6.0], ["CHARGING BAY", 4.5, 8.7], ["LAB HALL", 11.5, 8.7], ["COLD STORE", 19, 8.7]].forEach(function (r) {
       var t = el("text", { x: r[1] * C, y: r[2] * C, "text-anchor": "middle", "font-size": 10, "font-weight": 800, fill: "#B4B0A4", "letter-spacing": "1.5", "font-family": "Manrope, sans-serif" }, svg);
       t.textContent = r[0];
@@ -275,12 +513,15 @@ footer a{color:inherit}
     var wl = el("text", { x: 0, y: 20, "text-anchor": "middle", "font-size": 8, "font-weight": 800, fill: "#6B4E9B", "font-family": "Manrope, sans-serif" }, gWalker); wl.textContent = "NURSE";
     gRobot = el("g", {}, svg);
     el("circle", { cx: 0, cy: 0, r: 13, fill: "#14213D", stroke: "#fff", "stroke-width": 2 }, gRobot);
-    el("circle", { cx: -4.5, cy: -2, r: 2.4, fill: "#7BE0B5" }, gRobot);
-    el("circle", { cx: 4.5, cy: -2, r: 2.4, fill: "#7BE0B5" }, gRobot);
-    el("rect", { x: -5, y: 4, width: 10, height: 2, rx: 1, fill: "#7BE0B5" }, gRobot);
+    eyes = el("g", {}, gRobot);
+    el("circle", { cx: -4.5, cy: -2, r: 2.4, fill: "#7BE0B5" }, eyes);
+    el("circle", { cx: 4.5, cy: -2, r: 2.4, fill: "#7BE0B5" }, eyes);
+    el("rect", { x: -5, y: 4, width: 10, height: 2, rx: 1, fill: "#7BE0B5" }, eyes);
     robotTube = el("rect", { x: 7, y: -19, width: 7, height: 14, rx: 3, fill: "transparent", stroke: "#fff", "stroke-width": 1.5, visibility: "hidden" }, gRobot);
+    gBubble = el("g", { visibility: "hidden" }, svg);
+    bubbleRect = el("rect", { x: 0, y: -12, height: 22, rx: 11, fill: "#fff", stroke: "#14213D", "stroke-width": 1.5 }, gBubble);
+    bubbleText = el("text", { x: 0, y: 3.5, "text-anchor": "middle", "font-size": 11, "font-weight": 800, fill: "#14213D", "font-family": "Manrope, sans-serif" }, gBubble);
     drawObstacles(); drawExplored();
-    svg.addEventListener("click", onMapClick);
   }
 
   function drawStations() {
@@ -292,6 +533,10 @@ footer a{color:inherit}
       el("rect", { x: x + 2, y: y + C - 9, width: C - 4, height: 7, rx: 3, fill: col }, g);
       var t = el("text", { x: x + C / 2, y: y + 19, "text-anchor": "middle", "font-size": 13, "font-weight": 800, fill: "#14213D", "font-family": font }, g); t.textContent = k;
       badge(k, x + C - 3, y + 4);
+      var cg = el("g", { visibility: "hidden" }, gStations);
+      el("rect", { x: x - 1, y: y + C + 3, width: C + 2, height: 13, rx: 4, fill: "#F2C14E" }, cg);
+      var ct = el("text", { x: x + C / 2, y: y + C + 12.5, "text-anchor": "middle", "font-size": 8.5, "font-weight": 800, fill: "#14213D", "font-family": font }, cg); ct.textContent = "CAL";
+      calTags[k] = cg;
       st.g = g;
     });
     var ce = L.STATIONS.centrifuge, x = ce.cell[0] * C, y = ce.cell[1] * C;
@@ -309,7 +554,6 @@ footer a{color:inherit}
     var dk = L.STATIONS.dock; x = dk.cell[0] * C; y = dk.cell[1] * C;
     el("rect", { x: x + 3, y: y + 3, width: C - 6, height: C - 6, rx: 6, fill: "#EAF6F0", stroke: "#2E8B6E", "stroke-width": 2 }, gStations);
     el("path", { d: "M" + (x + 18) + " " + (y + 7) + "l-7 10h6l-3 9 8-11h-6z", fill: "#2E8B6E" }, gStations);
-    // rack shelf
     el("rect", { x: C + 2, y: C + 4, width: 6 * C - 4, height: C - 8, rx: 5, fill: "#F4F3EE", stroke: "#D8D5CB" }, gStations);
   }
   function badge(k, x, y) {
@@ -322,7 +566,12 @@ footer a{color:inherit}
   function drawObstacles() {
     gObs.innerHTML = "";
     Object.keys(obstacles).forEach(function (kk) {
-      var p = kk.split(",").map(Number), x = p[0] * C, y = p[1] * C;
+      var p = kk.split(",").map(Number), x = p[0] * C, y = p[1] * C, spill = obstacles[kk] === "spill";
+      if (spill) {
+        el("path", { d: "M" + (x + 4) + " " + (y + 18) + "q2 -12 12 -12q10 0 11 9q4 7 -4 11q-6 4 -12 1q-8 1 -7 -9z", fill: "#BFD8F2", stroke: "#5B8FC7", "stroke-width": 1.2 }, gObs);
+        var st = el("text", { x: x + 16, y: y + 20, "text-anchor": "middle", "font-size": 8, "font-weight": 800, fill: "#2F5E93", "font-family": "Manrope, sans-serif" }, gObs); st.textContent = "SPILL";
+        return;
+      }
       el("rect", { x: x + 1, y: y + 1, width: C - 2, height: C - 2, fill: "#FFF5D6" }, gObs);
       el("path", { d: "M" + (x + 16) + " " + (y + 5) + "L" + (x + 27) + " " + (y + 26) + "H" + (x + 5) + "Z", fill: "#F2C14E", stroke: "#14213D", "stroke-width": 1.5, "stroke-linejoin": "round" }, gObs);
       var t = el("text", { x: x + 16, y: y + 24, "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: "#14213D" }, gObs); t.textContent = "!";
@@ -337,40 +586,55 @@ footer a{color:inherit}
   }
 
   function render() {
-    // robot
     var px = R.c[0], py = R.c[1];
     if (R.next) { px += (R.next[0] - R.c[0]) * R.prog; py += (R.next[1] - R.c[1]) * R.prog; }
     gRobot.setAttribute("transform", "translate(" + cx(px) + "," + cx(py) + ")");
-    if (R.carrying) { robotTube.setAttribute("fill", COLORS[S[R.carrying - 1].test]); robotTube.setAttribute("visibility", "visible"); }
+    eyes.setAttribute("transform", "translate(" + (R.dir[0] * 2) + "," + (R.dir[1] * 1.5) + ")");
+    var carried = R.carrying && byId(R.carrying);
+    if (carried) { robotTube.setAttribute("fill", COLORS[carried.test]); robotTube.setAttribute("visibility", "visible"); }
     else robotTube.setAttribute("visibility", "hidden");
-    // path
     var pts = [];
     if (R.path.length > 1) {
       pts.push(cx(px) + "," + cx(py));
-      for (var i = R.next ? 1 : 1; i < R.path.length; i++) pts.push(cx(R.path[i][0]) + "," + cx(R.path[i][1]));
+      for (var i = 1; i < R.path.length; i++) pts.push(cx(R.path[i][0]) + "," + cx(R.path[i][1]));
     }
     pathLine.setAttribute("points", pts.join(" "));
-    // walker
     gWalker.setAttribute("visibility", W.on ? "visible" : "hidden");
     var wx = W.c[0], wy = W.c[1];
     if (W.next) { wx += (W.next[0] - W.c[0]) * W.prog; wy += (W.next[1] - W.c[1]) * W.prog; }
     gWalker.setAttribute("transform", "translate(" + cx(wx) + "," + cx(wy) + ")");
     centBlades.setAttribute("class", R.spinning ? "spin" : "");
-    renderTubes(); renderStats();
+    // speech bubble
+    if (R.bubble && sim < R.bubble.until) {
+      if (bubbleText.textContent !== R.bubble.text) { bubbleText.textContent = R.bubble.text; var w = R.bubble.text.length * 6.4 + 16; bubbleRect.setAttribute("width", w); bubbleRect.setAttribute("x", -w / 2); }
+      var bx = Math.min(768 - 60, Math.max(60, cx(px))), by = cx(py) - 30;
+      if (by < 16) by = cx(py) + 30;
+      gBubble.setAttribute("transform", "translate(" + bx + "," + by + ")"); gBubble.setAttribute("visibility", "visible");
+    } else gBubble.setAttribute("visibility", "hidden");
+    ["A", "B", "C"].forEach(function (k) { calTags[k].setAttribute("visibility", cal[k] ? "visible" : "hidden"); calTags[k].setAttribute("class", cal[k] ? "busy" : ""); });
+    renderTubes(); renderStats(); renderHud();
   }
 
   var tubeSig = "";
   function renderTubes() {
-    var sig = S.map(function (s) { return s.where + (s.done ? 1 : 0); }).join("|");
+    var t = shift ? shift.t : 0;
+    var sig = S.map(function (s) { return s.id + s.where + s.slot + (s.done ? 1 : 0) + (shift && s.where === "rack" ? Math.floor((t - s.arrive) * 2) : ""); }).join("|");
     if (sig === tubeSig) return; tubeSig = sig;
     gTubes.innerHTML = "";
     var counts = { A: 0, B: 0, C: 0, centrifuge: 0, fridge: 0 }, busy = { A: 0, B: 0, C: 0 };
     S.forEach(function (s) {
       if (s.where === "rack") {
-        var x = s.id * C, y = C;
-        el("rect", { x: x + 12, y: y + 6, width: 8, height: 18, rx: 4, fill: COLORS[s.test], stroke: s.urgent ? "#C8462F" : "none", "stroke-width": s.urgent ? 0 : 0 }, gTubes);
-        if (s.urgent) el("circle", { cx: x + 24, cy: y + 8, r: 3.5, fill: "#C8462F", stroke: "#fff", "stroke-width": 1 }, gTubes);
-        var t = el("text", { x: x + 6, y: y + 25, "font-size": 8, "font-weight": 800, fill: "#5E6676", "font-family": "Manrope, sans-serif" }, gTubes); t.textContent = s.bed;
+        var x = s.slot * C, y = C;
+        var g = el("g", { "class": s.fresh && sim - s.fresh < 0.6 ? "pop" : "" }, gTubes);
+        el("rect", { x: x + 12, y: y + 6, width: 8, height: 18, rx: 4, fill: COLORS[s.test] }, g);
+        if (s.urgent) el("circle", { cx: x + 24, cy: y + 8, r: 3.5, fill: "#C8462F", stroke: "#fff", "stroke-width": 1 }, g);
+        var tx = el("text", { x: x + 3, y: y + 25, "font-size": 8, "font-weight": 800, fill: "#5E6676", "font-family": "Manrope, sans-serif" }, g); tx.textContent = s.bed;
+        if (shift) { // deadline ring: fills as time runs out
+          var frac = Math.min(1, (t - s.arrive) / targetOf(s)), r = 13, len = 2 * Math.PI * r;
+          var col = frac < 0.6 ? "#2E8B6E" : frac < 1 ? "#C99A1E" : "#C8462F";
+          el("circle", { cx: x + 16, cy: y + 15, r: r, fill: "none", stroke: "#E2E0D8", "stroke-width": 2.5 }, g);
+          el("circle", { cx: x + 16, cy: y + 15, r: r, fill: "none", stroke: col, "stroke-width": 2.5, "stroke-dasharray": (len * frac).toFixed(1) + " " + len.toFixed(1), transform: "rotate(-90 " + (x + 16) + " " + (y + 15) + ")", "stroke-linecap": "round" }, g);
+        }
       } else if (counts[s.where] !== undefined) { counts[s.where]++; if (busy[s.where] !== undefined && !s.done) busy[s.where]++; }
     });
     Object.keys(counts).forEach(function (k) {
@@ -389,34 +653,66 @@ footer a{color:inherit}
     $("battbar").className = "batt" + (b < 30 ? " low" : "");
     $("s-dist").textContent = stats.dist + " m";
     $("s-rep").textContent = stats.rep;
-    $("s-res").textContent = ready + " / 6";
+    $("s-res").textContent = shift ? ready : ready + " / " + S.length;
     $("status").textContent = R.status;
     $("pill").className = "pill " + R.mode;
   }
+  var hudSig = "";
+  function renderHud() {
+    if (!shift) return;
+    var n = shiftNumbers(), left = SHIFT_LEN - shift.t;
+    var sig = [Math.ceil(left), n.loaded.length, n.late.length, n.overdue.length, Math.round(n.avg || 0)].join("|");
+    if (sig === hudSig) return; hudSig = sig;
+    $("h-clock").textContent = fmt(left);
+    $("h-ontime").textContent = n.onTime === null ? "–" : Math.round(n.onTime * 100) + "%";
+    $("h-tat").textContent = n.avg === null ? "–" : Math.round(n.avg) + " s";
+    $("h-done").textContent = n.loaded.length;
+    var lateN = n.late.length + n.overdue.length;
+    $("h-late").textContent = lateN; $("h-late-k").className = "k" + (lateN ? " bad" : "");
+    $("h-bar").style.width = (100 * shift.t / SHIFT_LEN).toFixed(1) + "%";
+  }
 
   function sampleStatus(s) {
-    if (s.where === "robot") return "On the robot";
-    if (s.where === "rack") return "Waiting at reception";
-    if (s.where === "fridge") return "Stored in the fridge";
-    if (s.where === "centrifuge") return s.spun ? "Spun, in the centrifuge" : "In the centrifuge";
-    if (s.done) return "Result ready (Analyser " + s.where + ")";
-    return "Testing on Analyser " + s.where + "…";
+    var tat = s.loaded !== undefined ? s.loaded - s.arrive : null;
+    if (s.where === "robot") return ["On the robot", ""];
+    if (s.where === "rack") {
+      if (shift) { var left = targetOf(s) - (shift.t - s.arrive); return left >= 0 ? ["In the rack · " + Math.ceil(left) + " s left", left < 15 ? "late" : ""] : ["In the rack · " + Math.ceil(-left) + " s late", "late"]; }
+      return ["Waiting at reception", ""];
+    }
+    if (s.where === "fridge") return ["Stored in the fridge", ""];
+    if (s.where === "centrifuge") return [s.spun ? "Spun, in the centrifuge" : "In the centrifuge", ""];
+    if (shift && tat !== null) return [(s.done ? "Result ready" : "Testing") + " · " + Math.round(tat) + " s" + (tat > targetOf(s) ? " (late)" : ""), tat > targetOf(s) ? "late" : (s.done ? "ready" : "")];
+    if (s.done) return ["Result ready (Analyser " + s.where + ")", "ready"];
+    return ["Testing on Analyser " + s.where + "…", ""];
   }
   var sampSig = "";
   function renderSamples() {
-    var sig = S.map(function (s) { return sampleStatus(s); }).join("|");
+    var list = S.slice();
+    if (shift) {
+      list.sort(function (a, b) { var da = a.loaded === undefined ? 0 : 1, db = b.loaded === undefined ? 0 : 1; return da - db || (da ? b.loaded - a.loaded : a.arrive - b.arrive); });
+      list = list.slice(0, 9);
+    }
+    var rows = list.map(function (s) { var st = sampleStatus(s); return [s, st]; });
+    var sig = rows.map(function (r) { return r[0].id + r[1][0]; }).join("|");
     if (sig === sampSig) return; sampSig = sig;
-    $("samples").innerHTML = S.map(function (s) {
-      return "<tr><td class='num'>" + s.bed + "</td><td><span class='sw' style='background:" + COLORS[s.test] + "'></span>" + s.test + (s.urgent ? "<span class='tag'>URGENT</span>" : "") + "</td><td class='st" + (s.done ? " ready" : "") + "'>" + sampleStatus(s) + "</td></tr>";
-    }).join("");
+    $("samples").innerHTML = rows.length ? rows.map(function (r) {
+      var s = r[0], st = r[1];
+      return "<tr><td class='num'>" + s.bed + "</td><td><span class='sw' style='background:" + COLORS[s.test] + "'></span>" + s.test + (s.urgent ? "<span class='tag'>URGENT</span>" : "") + "</td><td class='st " + st[1] + "'>" + st[0] + "</td></tr>";
+    }).join("") : "<tr><td colspan='3' class='hint'>No samples yet.</td></tr>";
   }
 
   function renderPlan() {
     var ol = $("plan");
-    if (!plan.length) { ol.innerHTML = "<li class='done' style='list-style:none;display:block'>Nothing planned yet.</li>"; return; }
-    ol.innerHTML = plan.map(function (e) {
+    var shown = plan;
+    if (shift) { // keep the list short in a shift: last few done, then what's next
+      var doneIdx = plan.map(function (e, i) { return e.status === "done" || e.status === "skipped" ? i : -1; }).filter(function (i) { return i >= 0; });
+      var hide = {}; doneIdx.slice(0, Math.max(0, doneIdx.length - 2)).forEach(function (i) { hide[i] = 1; });
+      shown = plan.filter(function (e, i) { return !hide[i]; });
+    }
+    if (!shown.length) { ol.innerHTML = "<li class='empty'>Nothing planned yet.</li>"; return; }
+    ol.innerHTML = shown.map(function (e) {
       var notes = e.notes.map(function (n) { return "<span class='note" + (n.warn ? " warn" : "") + "'>" + n.text + "</span>"; }).join("");
-      return "<li class='" + e.status + "'><div>" + e.text + notes + "</div></li>";
+      return "<li class='" + e.status + "'><div>" + e.text + (e.auto ? "<span class='tag auto'>AUTOPILOT</span>" : "") + notes + "</div></li>";
     }).join("");
   }
 
@@ -435,7 +731,7 @@ footer a{color:inherit}
       if (!s || (s.op !== "move" && s.op !== "goto")) return false;
       if (PLACES.indexOf(s.to) < 0) return false;
       if (s.op === "goto") return s.to !== "auto";
-      return Number.isInteger(s.sample) && s.sample >= 1 && s.sample <= 6 && s.to !== "dock";
+      return Number.isInteger(s.sample) && !!byId(s.sample) && s.to !== "dock";
     });
   }
   function understand(text) {
@@ -455,22 +751,24 @@ footer a{color:inherit}
 
   // Where each sample will be once everything already queued has run.
   function projected() {
-    var p = S.map(function (s) { return { where: s.where, spun: s.spun, done: s.done }; });
+    var p = {};
+    S.forEach(function (s) { p[s.id] = { where: s.where, spun: s.spun, done: s.done }; });
     plan.forEach(function (e) {
       if (e.kind !== "move" || e.status === "done" || e.status === "skipped") return;
-      var q = p[e.id - 1]; q.where = e.dest; if (e.spin) q.spun = true;
+      var q = p[e.id]; q.where = e.dest; if (e.spin) q.spun = true;
     });
     return p;
   }
 
-  function normalise(steps) {
+  function normalise(steps, auto) {
     var proj = projected(), out = [];
     steps.forEach(function (st) {
       if (st.op === "goto") {
-        out.push({ kind: "goto", to: st.to, text: st.to === "dock" ? "Go to the charging dock and charge" : "Drive to " + stName(st.to), notes: [], status: "queued" });
+        out.push({ kind: "goto", to: st.to, auto: auto, text: st.to === "dock" ? "Go to the charging dock and charge" : "Drive to " + stName(st.to), notes: [], status: "queued" });
         return;
       }
-      var s = S[st.sample - 1], q = proj[st.sample - 1], notes = [];
+      var s = byId(st.sample), q = proj[st.sample], notes = [];
+      if (!s) return;
       var label = "Bed " + s.bed + " · " + s.test.toLowerCase() + (s.urgent ? "<span class='tag'>URGENT</span>" : "");
       if (/^[ABC]$/.test(q.where)) {
         out.push({ kind: "move", id: s.id, dest: q.where, text: label, notes: [{ text: "Already on Analyser " + q.where + ", so I'll skip it." }], status: "skipped" });
@@ -492,45 +790,59 @@ footer a{color:inherit}
       if (dest === "centrifuge" && !s.needsSpin) notes.push({ text: "Only chemistry tubes need spinning, but I'll do it." });
       if (dest === "centrifuge") q.spun = true;
       q.where = dest; if (spin) q.spun = true;
-      out.push({ kind: "move", id: s.id, dest: dest, spin: spin, text: label + " → " + (spin ? "centrifuge → " : "") + stName(dest), notes: notes, status: "queued" });
+      out.push({ kind: "move", id: s.id, dest: dest, spin: spin, auto: auto, text: label + " → " + (spin ? "centrifuge → " : "") + stName(dest), notes: notes, status: "queued" });
     });
     return out;
+  }
+  function addEntries(steps, auto) {
+    if (!shift) plan = plan.filter(function (e) { return e.status === "queued" || e.status === "active"; });
+    var added = normalise(steps, auto);
+    plan = plan.concat(added);
+    renderPlan();
+    return added;
   }
 
   function submit(text) {
     text = (text || "").trim(); if (!text) return;
+    if (shift && shift.over) { setReply("The shift is over. Start a new one from the report on the map.", null); return; }
     if (LLM_ENDPOINT) setReply("Reading your request…", "thinking");
     understand(text).then(function (res) {
       if (!res.steps.length) {
         setReply("I couldn't find a lab task in that. I can move samples (by bed, test type, “urgent”, “all” or “the rest”) to an analyser, the centrifuge, the fridge or reception, and I can go charge.", res.source);
-        log("Didn't understand: “" + text.replace(/</g, "&lt;") + "”");
+        log("Didn't understand: “" + esc(text) + "”");
         return;
       }
-      plan = plan.filter(function (e) { return e.status === "queued" || e.status === "active"; });
-      var added = normalise(res.steps);
-      plan = plan.concat(added);
+      // your orders jump ahead of anything autopilot had queued
+      if (shift) plan = plan.filter(function (e) { return !(e.auto && e.status === "queued"); });
+      var added = addEntries(res.steps, false);
+      if (shift) { // move new manual orders before other queued work
+        var q = plan.filter(function (e) { return e.status === "queued" && added.indexOf(e) < 0; });
+        plan = plan.filter(function (e) { return e.status !== "queued"; }).concat(added.filter(function (e) { return e.status === "queued"; }), q, added.filter(function (e) { return e.status === "skipped"; }));
+        renderPlan();
+      }
       var real = added.filter(function (e) { return e.status === "queued"; }).length;
       var warns = added.reduce(function (n, e) { return n + e.notes.filter(function (x) { return x.warn; }).length; }, 0);
       var msg = "Got it: " + real + " task" + (real === 1 ? "" : "s") + ".";
-      if (added.some(function (e) { return e.kind === "move" && S[e.id - 1].urgent; }) && real > 1) msg += " Urgent samples go first.";
+      if (added.some(function (e) { var s = e.kind === "move" && byId(e.id); return s && s.urgent; }) && real > 1) msg += " Urgent samples go first.";
       if (warns) msg += " I changed something; see the note" + (warns > 1 ? "s" : "") + " below.";
       if (res.unknown && res.unknown.length) msg += " I ignored “" + res.unknown.join("”, “").trim() + "”.";
+      if (shift && shift.auto) msg += " Autopilot takes over again when I'm done.";
       setReply(msg, res.source);
-      log("Command: “" + text.replace(/</g, "&lt;") + "” → " + res.steps.length + " tool call" + (res.steps.length === 1 ? "" : "s") + (res.source === "cloud" ? " (cloud LLM)" : ""));
-      renderPlan();
+      log("Command: “" + esc(text) + "” → " + res.steps.length + " tool call" + (res.steps.length === 1 ? "" : "s") + (res.source === "cloud" ? " (cloud LLM)" : ""));
+      say("On it!");
     });
   }
 
   // ---------------- execution ----------------
-  function pickupCell(s) { return s.where === "rack" ? [s.id, 2] : L.STATIONS[s.where].at.slice(); }
-  function destCell(e) { return e.dest === "rack" ? [e.id, 2] : L.STATIONS[e.dest].at.slice(); }
+  function pickupCell(s) { return s.where === "rack" ? [s.slot, 2] : L.STATIONS[s.where].at.slice(); }
   function dist(a, b) { var r = L.astar(a, b, obstacles); return r.path ? r.path.length - 1 : 99; }
 
   function startNext() {
     var e = plan.find(function (x) { return x.status === "queued"; });
+    if (!e && autopilot()) e = plan.find(function (x) { return x.status === "queued"; });
     if (!e) {
-      if (R.entry) { R.entry = null; }
-      R.mode = "idle"; R.status = eq(R.c, HOME) ? "Ready at the charging dock" : "Idle. Waiting for a task";
+      R.entry = null; R.mode = "idle";
+      R.status = shift && shift.over ? "Shift over" : eq(R.c, HOME) ? (shift && !shift.auto ? "Waiting for your orders" : "Ready at the charging dock") : (shift && !shift.auto ? "Waiting for your orders" : "Idle. Waiting for a task");
       return;
     }
     e.status = "active"; R.entry = e; renderPlan();
@@ -540,18 +852,24 @@ footer a{color:inherit}
       m.push({ type: "go", to: to, label: "Driving to " + stName(e.to) });
       if (e.to === "dock") m.push({ type: "charge" });
     } else {
-      var s = S[e.id - 1];
-      if (s.where === "robot" || /^[ABC]$/.test(s.where)) { e.status = "skipped"; renderPlan(); R.entry = null; return; }
-      var a = pickupCell(s), b = destCell(e), ce = L.STATIONS.centrifuge.at;
+      var s = byId(e.id);
+      if (!s || s.where === "robot" || /^[ABC]$/.test(s.where)) { e.status = "skipped"; renderPlan(); R.entry = null; return; }
+      var a = pickupCell(s), ce = L.STATIONS.centrifuge.at, b;
+      if (e.dest === "rack") {
+        var slot = freeSlot();
+        if (!slot) { e.dest = "fridge"; e.notes.push({ warn: true, text: "The rack is full, so it goes to the fridge." }); renderPlan(); }
+        else { e.reserve = slot; }
+      }
+      b = e.dest === "rack" ? [e.reserve, 2] : L.STATIONS[e.dest].at.slice();
       m.push({ type: "go", to: a, label: "Collecting bed " + s.bed + " from " + stName(s.where) });
       m.push({ type: "pick", id: s.id });
       if (e.spin) { m.push({ type: "go", to: ce.slice(), label: "Taking bed " + s.bed + " to the centrifuge" }); m.push({ type: "spin", id: s.id }); }
       m.push({ type: "go", to: b, label: "Delivering bed " + s.bed + " to " + stName(e.dest) });
-      m.push({ type: "drop", id: s.id, where: e.dest });
-      // battery check: there, (spin,) deliver, then home
+      m.push({ type: "drop", id: s.id, where: e.dest, slot: e.reserve });
       cells = dist(R.c, a) + (e.spin ? dist(a, ce) + dist(ce, b) : dist(a, b)) + dist(b, HOME);
       if (R.battery - cells * COST < 20 && !eq(R.c, HOME)) {
         log("Battery " + Math.round(R.battery) + "%: not enough for this trip (" + cells + " m). Charging first.");
+        say("Need a quick charge");
         m.unshift({ type: "go", to: HOME.slice(), label: "Low battery. Heading to the dock" }, { type: "charge" });
       } else if (R.battery - cells * COST < 20) {
         m.unshift({ type: "charge" });
@@ -575,8 +893,17 @@ footer a{color:inherit}
     return false;
   }
   function walkerAt(p) { return W.on && (eq(W.c, p) || eq(W.next, p)); }
+  function replanIfOnPath(c, why) {
+    var onPath = R.path.slice(1).some(function (q) { return eq(q, c); });
+    if (!onPath || !R.micro.length || R.micro[0].type !== "go") return false;
+    var old = R.path.length - 1;
+    if (R.next) { R.path = [R.c, R.next]; stats.rep++; log(why + ". Replanning."); say("Detour!"); return true; }
+    if (planRoute(R.micro[0].to, true)) { stats.rep++; log(why + ". Replanned: " + (R.path.length - 1) + " m instead of " + old + " m."); say("Detour!"); return true; }
+    return false;
+  }
 
   function stepRobot(dt) {
+    if (shift && shift.over) return;
     if (R.wait > 0) { R.wait -= dt; return; }
     if (!R.micro.length) {
       if (R.entry) finishEntry();
@@ -600,46 +927,61 @@ footer a{color:inherit}
       }
       var nx = R.path[1];
       if (obstacles[key(nx)] || walkerAt(nx)) {
-        var before = R.path.length;
+        var byNurse = walkerAt(nx);
         if (planRoute(m.to, true)) {
           stats.rep++;
-          if (walkerAt(nx)) log("Nurse in the way. Going around (" + (R.path.length - 1) + " m left).");
+          if (byNurse) { log("Nurse in the way. Going around (" + (R.path.length - 1) + " m left)."); say("Excuse me!"); }
           nx = R.path[1];
           if (walkerAt(nx) || obstacles[key(nx)]) { R.status = "Waiting for the path to clear"; R.mode = "wait"; R.wait = 0.4; return; }
-        } else { R.status = "Waiting for the path to clear"; R.mode = "wait"; R.wait = 0.4; return; }
+        } else { R.status = "Waiting for the path to clear"; R.mode = "wait"; R.wait = 0.4; if (byNurse) say("After you!"); return; }
       }
+      R.dir = [nx[0] - R.c[0], nx[1] - R.c[1]];
       R.next = nx; R.prog = 0;
       return;
     }
     var s;
     if (m.type === "pick") {
-      s = S[m.id - 1]; s.where = "robot"; R.carrying = m.id; R.micro.shift(); R.wait = 0.4;
+      s = byId(m.id); s.where = "robot"; s.picked = shift ? shift.t : sim; R.carrying = m.id; R.micro.shift(); R.wait = 0.4;
       R.status = "Picking up bed " + s.bed; log("Picked up bed " + s.bed + " (" + s.test.toLowerCase() + ").");
+      say(s.urgent ? "Urgent one, hurrying!" : "Got it");
       return;
     }
     if (m.type === "spin") {
-      if (m.left === undefined) { m.left = 2.5; R.spinning = true; R.status = "Spinning bed " + S[m.id - 1].bed + " in the centrifuge"; R.mode = "wait"; }
+      if (m.left === undefined) { m.left = 2.5; R.spinning = true; R.status = "Spinning bed " + byId(m.id).bed + " in the centrifuge"; R.mode = "wait"; say("Spinning…"); }
       m.left -= dt;
-      if (m.left <= 0) { S[m.id - 1].spun = true; R.spinning = false; R.micro.shift(); log("Bed " + S[m.id - 1].bed + " spun."); }
+      if (m.left <= 0) { byId(m.id).spun = true; R.spinning = false; R.micro.shift(); log("Bed " + byId(m.id).bed + " spun."); }
       return;
     }
     if (m.type === "drop") {
-      s = S[m.id - 1]; s.where = m.where; R.carrying = null; R.micro.shift(); R.wait = 0.4;
+      s = byId(m.id);
+      if (cal[m.where]) {
+        if (!m.waited) { m.waited = 1; log("Analyser " + m.where + " is calibrating. Waiting."); say("Waiting for " + m.where); }
+        R.status = "Waiting for Analyser " + m.where + " to finish calibrating"; R.mode = "wait"; stats.calWait = (stats.calWait || 0) + dt; return;
+      }
+      s.where = m.where; R.carrying = null; R.micro.shift(); R.wait = 0.4;
       if (m.where === "centrifuge") s.spun = true;
-      if (/^[ABC]$/.test(m.where)) { s.readyAt = sim + 6; log("Bed " + s.bed + " loaded on Analyser " + m.where + "."); }
-      else log("Bed " + s.bed + " left in " + stName(m.where) + ".");
+      if (m.where === "rack") s.slot = m.slot;
+      if (/^[ABC]$/.test(m.where)) {
+        s.readyAt = sim + 6;
+        if (shift) {
+          s.loaded = shift.t; var tat = s.loaded - s.arrive, ok = tat <= targetOf(s);
+          log("Bed " + s.bed + " loaded on Analyser " + m.where + " in " + Math.round(tat) + " s" + (ok ? "." : " (late)."));
+          say(ok ? "On time ✓" : "Late, sorry");
+        } else { log("Bed " + s.bed + " loaded on Analyser " + m.where + "."); say("Delivered ✓"); }
+      } else log("Bed " + s.bed + " left in " + stName(m.where) + ".");
       R.status = "Dropping off bed " + s.bed;
       return;
     }
     if (m.type === "charge") {
+      if (m.started === undefined) { m.started = 1; say("Charging"); }
       R.status = "Charging " + Math.round(R.battery) + "%"; R.mode = "wait";
-      R.battery = Math.min(100, R.battery + 30 * dt);
+      R.battery = Math.min(100, R.battery + 30 * dt); stats.charge += dt;
       if (R.battery >= 100) { R.micro.shift(); log("Fully charged."); }
     }
   }
 
   function stepWalker(dt) {
-    if (!W.on) return;
+    if (!W.on || (shift && shift.over)) return;
     if (W.next) {
       W.prog += dt * 1.5;
       if (W.prog >= 1) { W.c = W.next; W.next = null; W.prog = 0; }
@@ -654,7 +996,7 @@ footer a{color:inherit}
   function stepSamples() {
     S.forEach(function (s) {
       if (!s.done && /^[ABC]$/.test(s.where) && s.readyAt !== undefined && sim >= s.readyAt) {
-        s.done = true; log("Result ready: bed " + s.bed + " " + s.test.toLowerCase() + (s.urgent ? " (urgent)" : "") + ".");
+        s.done = true; if (!shift) log("Result ready: bed " + s.bed + " " + s.test.toLowerCase() + (s.urgent ? " (urgent)" : "") + ".");
       }
     });
   }
@@ -663,10 +1005,9 @@ footer a{color:inherit}
   function frame(t) {
     if (last === null) last = t;
     var dt = Math.min(0.1, (t - last) / 1000) * speed; last = t;
-    sim += dt;
-    // small sub-steps keep fast speeds smooth
+    if (!(shift && shift.over)) sim += dt;
     var n = Math.ceil(dt / 0.05);
-    for (var i = 0; i < n; i++) { stepWalker(dt / n); stepRobot(dt / n); }
+    for (var i = 0; i < n; i++) { stepShift(dt / n); stepWalker(dt / n); stepRobot(dt / n); }
     stepSamples();
     render(); renderSamples();
     requestAnimationFrame(frame);
@@ -674,69 +1015,78 @@ footer a{color:inherit}
 
   // ---------------- input ----------------
   function onMapClick(ev) {
+    if (shift && shift.over) return;
     var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
     var p = pt.matrixTransform(svg.getScreenCTM().inverse());
     var x = Math.floor(p.x / C), y = Math.floor(p.y / C), kk = x + "," + y;
     if (L.isWall(x, y) || L.FIXED[kk] || PROTECT[kk] || eq([x, y], R.c) || eq([x, y], R.next) || eq([x, y], W.c) || eq([x, y], W.next)) return;
+    if (obstacles[kk] === "spill") { toast("The cleaners are on it.", ""); return; }
     if (obstacles[kk]) { delete obstacles[kk]; drawObstacles(); log("Wet floor sign removed."); return; }
-    obstacles[kk] = 1;
-    // never let a sign cut the lab in two: every stop must stay reachable
-    var cut = Object.keys(PROTECT).some(function (pk) { var q = pk.split(",").map(Number); return !L.astar(R.c, q, obstacles).path; });
-    if (cut) { delete obstacles[kk]; log("A sign there would block the only way through, so I left it out."); return; }
-    drawObstacles();
-    var onPath = R.path.slice(1).some(function (q) { return q[0] === x && q[1] === y; });
-    if (onPath && R.micro.length && R.micro[0].type === "go") {
-      var old = R.path.length - 1;
-      var keepNext = R.next;
-      if (keepNext) { // finish the current step first, replan from there
-        R.path = [R.c, keepNext];
-      } else if (planRoute(R.micro[0].to, true)) {
-        stats.rep++;
-        log("Wet floor on my route. Replanned: " + (R.path.length - 1) + " m instead of " + old + " m.");
-      }
-      if (keepNext) { stats.rep++; log("Wet floor on my route. Replanning."); }
-    } else log("Wet floor sign placed.");
+    var extra = {}; extra[kk] = 1;
+    if (cutsLab(extra)) { log("A sign there would block the only way through, so I left it out."); toast("That would block the only way through.", "warn"); return; }
+    obstacles[kk] = 1; drawObstacles();
+    if (!replanIfOnPath([x, y], "Wet floor on my route")) log("Wet floor sign placed.");
   }
+  svg.addEventListener("click", onMapClick);
+
+  function setSpeed(v) { speed = v; var i = SPEEDS.indexOf(v); if (i >= 0) $("speed").value = i; $("speed-v").textContent = v + "×"; }
 
   $("cmd").addEventListener("submit", function (e) { e.preventDefault(); submit($("q").value); $("q").value = ""; });
   $("examples").addEventListener("click", function (e) {
     var b = e.target.closest(".chip"); if (!b) return;
-    $("q").value = b.textContent; submit(b.textContent); $("q").value = "";
+    submit(b.textContent);
   });
-  $("speed").addEventListener("input", function () { speed = SPEEDS[+this.value]; $("speed-v").textContent = speed + "×"; });
+  $("speed").addEventListener("input", function () { setSpeed(SPEEDS[+this.value]); });
   $("t-search").addEventListener("click", function () { showSearch = !showSearch; this.setAttribute("aria-pressed", showSearch); drawExplored(); });
   $("t-nurse").addEventListener("click", function () {
     W.on = !W.on; this.setAttribute("aria-pressed", W.on);
     if (W.on) { W.c = [3, 6]; W.next = null; if (eq(W.c, R.c)) W.c = [12, 6]; }
     log(W.on ? "A nurse is now walking the corridor." : "The corridor is clear.");
   });
+  $("t-auto").addEventListener("click", function () {
+    if (!shift) return;
+    shift.auto = !shift.auto; applyMode();
+    if (!shift.auto) { plan.forEach(function (e) { if (e.auto && e.status === "queued") e.status = "skipped"; }); renderPlan(); }
+    setReply(shift.auto ? "Autopilot on. I'll keep picking the sample closest to its deadline." : "Autopilot off. You're in charge. Tell me what to move next.", null);
+    log(shift.auto ? "Autopilot on." : "Autopilot off.");
+  });
   $("stop").addEventListener("click", function () {
     plan.forEach(function (e) { if (e.status === "queued") e.status = "skipped"; });
-    // finish the current hand-off safely: drop what we carry back where it can go
+    if (shift && shift.auto) { shift.auto = false; applyMode(); }
     renderPlan(); log("Stop pressed. Finishing the current step, then holding.");
   });
-  $("clear").addEventListener("click", function () { obstacles = {}; drawObstacles(); log("All wet floor signs cleared."); });
-  $("reset").addEventListener("click", function () { tubeSig = sampSig = lastStats = ""; reset(); });
+  $("clear").addEventListener("click", function () {
+    Object.keys(obstacles).forEach(function (k) { if (obstacles[k] !== "spill") delete obstacles[k]; });
+    drawObstacles(); log("Wet floor signs cleared.");
+  });
+  $("reset").addEventListener("click", function () { reset(mode, shift ? shift.seed : null); });
+  $("m-free").addEventListener("click", function () { if (mode !== "free") reset("free"); });
+  $("m-shift").addEventListener("click", function () { if (mode !== "shift") reset("shift"); });
+  $("cta-go").addEventListener("click", function () { reset("shift"); });
+  $("report").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var r = b.getAttribute("data-r");
+    if (r === "same") { var seed = shift.seed; shift.auto = !shift.auto; reset("shift", seed); }
+    else if (r === "new") reset("shift");
+    else reset("free");
+  });
 
-  // voice input, where the browser supports it
   try {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SR) {
       var mic = $("mic"), rec = new SR(), listening = false;
       rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
       mic.hidden = false;
-      mic.addEventListener("click", function () {
-        try { if (listening) rec.stop(); else rec.start(); } catch (e) {}
-      });
+      mic.addEventListener("click", function () { try { if (listening) rec.stop(); else rec.start(); } catch (e) {} });
       rec.onstart = function () { listening = true; mic.classList.add("on"); $("q").placeholder = "Listening…"; };
       rec.onend = function () { listening = false; mic.classList.remove("on"); $("q").placeholder = "e.g. Take the urgent samples to the right analyser"; };
       rec.onresult = function (e) { var t = e.results[0][0].transcript; $("q").value = t; submit(t); };
     }
   } catch (e) {}
 
-  reset();
+  reset("free");
   requestAnimationFrame(frame);
-  window.__labbot = { get R() { return R; }, get S() { return S; }, get plan() { return plan; }, submit: submit, get stats() { return stats; }, setSpeed: function (v) { speed = v; } };
+  window.__labbot = { get R() { return R; }, get S() { return S; }, get plan() { return plan; }, get shift() { return shift; }, get stats() { return stats; }, submit: submit, setSpeed: setSpeed, reset: reset };
 })();
 </script>
 </body>

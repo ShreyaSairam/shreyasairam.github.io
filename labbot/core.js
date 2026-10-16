@@ -35,18 +35,18 @@
   // Sample rack in reception: slot k sits at (k, 1), robot picks from (k, 2).
   var TEST_TO = { "Blood count": "A", "Chemistry": "B", "Urine": "C" };
 
+  function makeSample(id, bed, test, urgent, slot) {
+    return { id: id, bed: bed, test: test, urgent: urgent, slot: slot, where: "rack", spun: false, needsSpin: test === "Chemistry", done: false };
+  }
   function freshSamples() {
     return [
-      { id: 1, bed: 1, test: "Blood count", urgent: false },
-      { id: 2, bed: 2, test: "Chemistry", urgent: true },
-      { id: 3, bed: 3, test: "Urine", urgent: false },
-      { id: 4, bed: 4, test: "Blood count", urgent: true },
-      { id: 5, bed: 5, test: "Chemistry", urgent: false },
-      { id: 6, bed: 6, test: "Urine", urgent: false }
-    ].map(function (s) {
-      s.where = "rack"; s.spun = false; s.needsSpin = s.test === "Chemistry"; s.done = false; return s;
-    });
+      [1, "Blood count", false], [2, "Chemistry", true], [3, "Urine", false],
+      [4, "Blood count", true], [5, "Chemistry", false], [6, "Urine", false]
+    ].map(function (r) { return makeSample(r[0], r[0], r[1], r[2], r[0]); });
   }
+  function byId(samples, id) { for (var i = 0; i < samples.length; i++) if (samples[i].id === id) return samples[i]; return null; }
+  // Waiting to be dealt with: not tested yet and not already on an analyser.
+  function pendingOf(samples) { return samples.filter(function (s) { return !s.done && !/^[ABC]$/.test(s.where); }); }
 
   function isWall(x, y) { return x < 0 || y < 0 || x >= W || y >= H || MAP[y][x] === "#"; }
   function fixedBlocked() {
@@ -98,11 +98,15 @@
     return null;
   }
   function samplesIn(text, samples) {
-    var ids = [], m, re = /\b(?:bed|sample|tube|patient|s)\s*#?\s*(\d)\b/g;
-    while ((m = re.exec(text))) { var n = +m[1]; if (n >= 1 && n <= 6 && ids.indexOf(n) < 0) ids.push(n); }
-    var andNums = text.match(/\b(?:beds|samples|tubes)\s+([\d ,and&]+)/);
-    if (andNums) (andNums[1].match(/\d/g) || []).forEach(function (d) { d = +d; if (d >= 1 && d <= 6 && ids.indexOf(d) < 0) ids.push(d); });
-    var pending = samples.filter(function (s) { return !s.done; });
+    var pending = pendingOf(samples), ids = [], m;
+    var addBed = function (n) {
+      var hit = pending.filter(function (s) { return s.bed === n; })[0] || samples.filter(function (s) { return s.bed === n; })[0];
+      if (hit && ids.indexOf(hit.id) < 0) ids.push(hit.id);
+    };
+    var re = /\b(?:bed|sample|tube|patient)\s*#?\s*(\d{1,2})\b/g;
+    while ((m = re.exec(text))) addBed(+m[1]);
+    var many = text.match(/\b(?:beds|samples|tubes|patients)\s+((?:\d{1,2}|,|and|&|\s)+)/);
+    if (many) (many[1].match(/\d{1,2}/g) || []).forEach(function (d) { addBed(+d); });
     var pick = function (fn) { return pending.filter(fn).map(function (s) { return s.id; }); };
     if (!ids.length) {
       if (/\burgent\b/.test(text)) ids = pick(function (s) { return s.urgent; });
@@ -127,11 +131,12 @@
       if ((/\b(charge|recharge|dock)\b/.test(c) && !ids.length) || (isGo && to === "dock")) { steps.push({ op: "goto", to: "dock" }); return; }
       if (isGo && to) { steps.push({ op: "goto", to: to }); return; }
       if (ids[0] === "REST") {
-        ids = samples.filter(function (s) { return !s.done && !claimed[s.id]; }).map(function (s) { return s.id; });
+        ids = pendingOf(samples).filter(function (s) { return !claimed[s.id]; }).map(function (s) { return s.id; });
       }
       if (!ids.length) { if (c.length > 2) notes.push(c); return; }
       // urgent first when moving several
-      ids.sort(function (a, b) { return (samples[b - 1].urgent ? 1 : 0) - (samples[a - 1].urgent ? 1 : 0); });
+      var u = function (id) { var x = byId(samples, id); return x && x.urgent ? 1 : 0; };
+      ids.sort(function (a, b) { return u(b) - u(a); });
       ids.forEach(function (id) { claimed[id] = 1; steps.push({ op: "move", sample: id, to: to && to !== "rack" ? to : (to === "rack" ? "rack" : "auto") }); });
     });
     return { steps: steps, unknown: notes };
@@ -139,13 +144,13 @@
 
   function describe(step, samples) {
     if (step.op === "goto") return "Drive to " + (step.to === "rack" ? "reception" : STATIONS[step.to].name);
-    var s = samples[step.sample - 1], dest;
+    var s = byId(samples, step.sample), dest;
     if (step.to === "auto") dest = STATIONS[TEST_TO[s.test]].name + " (right analyser for " + s.test.toLowerCase() + ")";
     else if (step.to === "rack") dest = "reception";
     else dest = STATIONS[step.to].name;
     return "Bed " + s.bed + " " + s.test.toLowerCase() + (s.urgent ? " (urgent)" : "") + " → " + dest;
   }
 
-  root.LabCore = { MAP: MAP, W: W, H: H, STATIONS: STATIONS, TEST_TO: TEST_TO, freshSamples: freshSamples, isWall: isWall, FIXED: FIXED, astar: astar, parse: parse, describe: describe };
+  root.LabCore = { MAP: MAP, W: W, H: H, STATIONS: STATIONS, TEST_TO: TEST_TO, freshSamples: freshSamples, makeSample: makeSample, byId: byId, pendingOf: pendingOf, isWall: isWall, FIXED: FIXED, astar: astar, parse: parse, describe: describe };
   if (typeof module !== "undefined") module.exports = root.LabCore;
 })(typeof window !== "undefined" ? window : globalThis);
