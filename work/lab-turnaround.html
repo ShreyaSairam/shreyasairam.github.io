@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Turnaround · Shreya Sairam</title>
+<meta name="description" content="Where does a blood test lose its hour? A pathology lab console that traces 11,800 samples stage by stage, answers questions in plain English and tests fixes with a queueing simulation.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Turnaround"><meta property="og:description" content="Where does a blood test lose its hour? A pathology lab console that traces 11,800 samples stage by stage, answers questions in plain English and tests fixes with a queueing simulation."><meta property="og:image" content="https://shreyasairam.github.io/media/og.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5F4EF;--card:#FFFFFF;--ink:#1D2033;--soft:#5B5F75;--line:#E2E0D8;--navy:#1E2761;--navy-deep:#141B47;--gold:#B88A12;--gold-soft:#E4CD82;--ice:#D6E2FB;
+--display:"Fraunces",Georgia,serif;--body:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0F1129;--card:#171A3D;--ink:#ECEDF6;--soft:#A7AAC6;--line:#2A2E57;--navy:#232C72;--navy-deep:#0B0E28;--gold:#E2C26A;--ice:#C9D7F7;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0F1129;--card:#171A3D;--ink:#ECEDF6;--soft:#A7AAC6;--line:#2A2E57;--navy:#232C72;--navy-deep:#0B0E28;--gold:#E2C26A;--ice:#C9D7F7;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit}:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+.wrap{max-width:860px;margin:0 auto;padding-inline:20px}
+.top{background:var(--navy-deep);color:var(--ice)}
+.top .wrap{max-width:1080px;display:flex;justify-content:space-between;align-items:center;padding-block:14px;font-family:var(--mono);font-size:13px}
+.top a{text-decoration:none;opacity:.85}.top a:hover{opacity:1}
+.hero{background:linear-gradient(165deg,var(--navy-deep),var(--navy));color:var(--ice);padding-block:46px 120px}
+.kind{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(34px,5.6vw,52px);line-height:1.05;margin:10px 0 14px;color:#fff;text-wrap:balance}
+.hook{font-size:clamp(18px,2.2vw,21px);max-width:44ch;margin:0 0 22px;opacity:.95}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-block;font-family:var(--mono);font-size:13px;text-decoration:none;padding:10px 17px;border-radius:8px;border:1px solid var(--gold-soft);color:var(--gold-soft)}
+.btn.primary{background:var(--gold-soft);color:var(--navy-deep)}
+.btn:hover{background:#fff;color:var(--navy-deep);border-color:#fff}
+.shot{margin-top:-90px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 50px rgba(20,27,71,.18);background:var(--navy-deep);aspect-ratio:16/9}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:left top;display:block}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-block:30px 10px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.meta div{min-width:0}.meta b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:4px}
+.meta span{font-size:14.5px;color:var(--soft);line-height:1.45;display:block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-block:30px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.stat b{display:block;font-family:var(--display);font-size:clamp(26px,3.4vw,34px);font-weight:600;line-height:1.05}
+.stat span{display:block;font-size:13.5px;color:var(--soft);margin-top:6px;line-height:1.4}
+section{padding-block:26px}
+.n{font-family:var(--mono);font-size:12px;color:var(--gold);letter-spacing:.12em}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(25px,3.2vw,32px);line-height:1.15;margin:4px 0 14px}
+section p{margin:0 0 14px;max-width:66ch}
+.steps{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:0;counter-reset:s}
+.steps li{position:relative;padding:0 0 22px 52px;counter-increment:s}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-family:var(--mono);font-size:14px}
+.steps li::after{content:"";position:absolute;left:16.5px;top:38px;bottom:4px;width:1px;background:var(--line)}
+.steps li:last-child::after{display:none}
+.steps b{display:block;font-size:17px;margin-bottom:2px}.steps span{color:var(--soft)}
+.lessons{display:grid;gap:12px;margin-top:16px}
+.lesson{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:16px 18px}
+.lesson b{display:block;margin-bottom:3px}.lesson span{color:var(--soft)}
+.next{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-block:30px 50px}
+.next a{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.next a:hover{border-color:var(--gold)}
+.next small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.next strong{display:block;font-family:var(--display);font-size:19px;margin-top:4px}
+.next a.r{text-align:right}
+footer{background:var(--navy-deep);color:var(--ice);padding-block:28px;font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+@media (max-width:700px){.meta,.stats{grid-template-columns:1fr}.next{grid-template-columns:1fr}.next a.r{text-align:left}.hero{padding-bottom:90px}.shot{margin-top:-64px}}
+</style></head><body>
+<nav class="top"><div class="wrap"><a href="../index.html#work">← All projects</a><a href="../index.html">Shreya Sairam</a></div></nav>
+<header class="hero"><div class="wrap">
+<span class="kind">Healthcare operations · Simulation · Analytics</span><h1>Turnaround</h1><p class="hook">An urgent blood test should be back within an hour. This console finds where the late ones lose their time, and tests which fixes would actually help.</p>
+<div class="btns"><a class="btn primary" href="../lab-turnaround/index.html">Open the console</a><a class="btn" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/lab-turnaround" target="_blank" rel="noopener">Code</a></div></div></header>
+<main class="wrap">
+<div class="shot"><img src="../lab-turnaround/media/poster.jpg" alt="Turnaround console: late sample bottleneck, distribution and plain English answer"></div>
+<div class="meta"><div><b>Role</b><span>Solo build</span></div><div><b>When</b><span>2026</span></div><div><b>Built with</b><span>JavaScript, discrete event simulation, SVG charts, rule based question parsing</span></div></div>
+<div class="stats"><div class="stat"><b>11,800</b><span>samples traced through eight stages over a month</span></div><div class="stat"><b>60% → 83%</b><span>urgent samples on time between 06:00 and 09:00, with three changes</span></div><div class="stat"><b>133 of 133</b><span>haemolysed urgent samples missed their target</span></div></div>
+<section><span class="n">01</span><h2>The problem</h2><p>When a doctor in ED orders a troponin, they expect the result in about an hour. Labs usually measure the part they control, from the tube arriving to the result. But the patient waits from the moment the test is ordered.</p><p>The hour is spread across a lot of hands: the nurse who takes the blood, the porter or pneumatic tube, reception, the centrifuge, the analyser, and the scientist who releases the result. When a result is late, every team can say its own step was fine.</p></section>
+<section><span class="n">02</span><h2>What I built</h2><p>A console that follows every sample from order to released result, with a timestamp for each stage. It shows the turnaround distribution, which ward does worst, and a heatmap of every hour of the month, so a bad morning or an outage stands out. Click any hour and you see each sample's journey as a bar split by stage.</p><p>You can also just ask. “Which ward has the slowest urgent results at night?” becomes a filter and an answer, and the console shows what it understood so you can check it.</p><p>Then there is the what if tab. Tick a change, like an earlier reception shift or a third centrifuge, and the whole month reruns on the same patients and the same orders. The only difference is the change.</p></section>
+<section><span class="n">03</span><h2>How it works</h2><ol class="steps"><li><b>A simulated month, built from real processes</b><span>There is no public sample level turnaround dataset, so I simulated one. Five wards with their own order patterns, including the 06:00 morning bloods. Pneumatic tube for ED and ICU, porters elsewhere. A reception rota, two batching centrifuges, daily QC, Wednesday maintenance, haemolysed recollects and a tube outage.</span></li><li><b>Real queues, not random delays</b><span>Every tube waits for the same people and machines as every other tube. So a busy morning slows everything down, the way it does in a real lab.</span></li><li><b>Compare late with on time</b><span>The assay takes the longest on average, but it takes the same time for every sample. The useful question is which stage is longer for late samples than for on time ones. That gap is the bottleneck.</span></li><li><b>Questions to queries</b><span>A parser picks out wards, tests, priority, times and dates, plus an intent: why, which ward, which test, when or which day. The answer runs on the same numbers as the charts.</span></li><li><b>Paired what if runs</b><span>Each scenario uses the same random seed, so every patient and order is identical. Any change in the result comes from the fix alone.</span></li></ol></section>
+<section><span class="n">04</span><h2>What I found</h2><p>Across the month, 87% of urgent samples met the 60 minute target. That average hid two problems.</p><p>The first was the morning. Urgent samples ordered between 06:00 and 09:00 made it only 60% of the time. The morning ward bloods arrive while reception has one officer, and the chemistry analyser goes down for QC at 08:00. Urgent tubes get stuck behind hundreds of routine ones.</p><p>The second was the wards. Urgent ward samples made their target 52% of the time, against 90% for ED. The wards have no pneumatic tube, so every urgent sample needs a porter, and overnight there is only one.</p><p>Haemolysis was the most expensive single event. Every one of the 133 urgent samples that had to be taken again missed its target.</p><p>Then I tested fixes. An earlier start for the second reception officer, QC moved to 05:30 and a second porter overnight took the morning from 60% to 83% and the wards from 52% to 69%. A third centrifuge and wider autoverification changed almost nothing, because those stages were not where the time went.</p></section>
+<section><span class="n">05</span><h2>What I learned</h2><div class="lessons"><div class="lesson"><b>The average hides the problem.</b><span>87% on time sounds fine. Splitting by hour and by ward found the morning and the wards straight away.</span></div><div class="lesson"><b>The slowest stage is not always the bottleneck.</b><span>Comparing late samples with on time ones pointed to reception and porters, not the analyser.</span></div><div class="lesson"><b>Test the fix before you buy it.</b><span>The expensive option, a third centrifuge, did nothing. The cheap rota changes did most of the work.</span></div><div class="lesson"><b>What I'd do next</b><span>Run it on a real LIS export, add haemolysis by collection method and staff group, and build an alert for when the morning queue starts to grow.</span></div></div></section>
+<div class="btns" style="margin-top:8px"><a class="btn primary" style="background:var(--navy);border-color:var(--navy);color:#fff" href="../lab-turnaround/index.html">Open the console</a><a class="btn" style="border-color:var(--navy);color:var(--navy)" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/lab-turnaround" target="_blank" rel="noopener">Code</a></div>
+<div class="next"><a href="churn-prediction.html"><small>← Previous</small><strong>Churn Prediction: Employees to Bank Customers</strong></a><a class="r" href="out-of-phase.html"><small>Next →</small><strong>Out of Phase</strong></a></div>
+</main>
+<footer><div class="wrap"><span>Shreya Sairam · Curious about the data. Careful with the answer.</span><a href="../index.html">Back to portfolio</a></div></footer>
+</body></html>

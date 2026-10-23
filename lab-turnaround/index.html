@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Turnaround: a pathology lab operations console. Trace where blood tests lose time between the ward and the result, ask questions in plain English, and test fixes on a simulated month of 11,800 samples.">
+<title>Turnaround: Lab TAT Console</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F3F4F6; --card:#FFFFFF; --ink:#14213D; --muted:#5E6676; --faint:#8A91A0; --line:#E2E4E9; --soft:#F1F2F5;
+  --ok:#2E8B6E; --amber:#C99A1E; --red:#C8462F; --acc:#5B6CD9;
+  --ui:"Manrope","Segoe UI",Roboto,Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --float:0 10px 28px rgba(20,33,61,.08),0 1px 3px rgba(20,33,61,.06);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1360px;margin:0 auto;padding-inline:22px;padding-block:0 40px}
+header{display:flex;align-items:center;gap:14px;padding-block:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.08rem}
+.mark{width:30px;height:30px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.crumb{font-family:var(--mono);font-size:.74rem;color:var(--faint);border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 8px}
+header .home{margin-left:auto;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+header .code{color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem}
+.intro{margin:4px 0 16px}
+h1{font-size:clamp(1.5rem,3vw,2.1rem);margin:0 0 4px;font-weight:800;letter-spacing:-.02em}
+.lede{margin:0;color:var(--muted);max-width:820px}
+.lbl{font-size:.7rem;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:10px;padding:9px 15px;font-weight:700;font-size:.88rem}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:.78rem;border-radius:8px}
+.chipf{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 9px;font-weight:700;font-size:.78rem;color:var(--muted)}
+.chipf[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.seg{display:inline-flex;background:var(--soft);border-radius:8px;padding:2px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;border-radius:6px;padding:4px 9px;font-weight:700;font-size:.78rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,33,61,.14)}
+
+.console{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.main{display:grid;gap:14px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chead h2{margin:0;font-size:.98rem;font-weight:800}
+.chead small{color:var(--faint);font-size:.76rem;font-weight:600}
+
+.scope{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.82rem}
+.scope .pill{background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-weight:700;color:var(--ink)}
+.scope .scn{background:#EEF0FB;border-color:#C9CFF2;color:#3A48A8}
+.scope button{border:0;background:none;color:var(--acc);font-weight:700;font-size:.8rem;padding:0}
+
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;min-width:0}
+.kpi b{display:block;font-size:1.45rem;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.kpi span{font-size:.72rem;color:var(--muted);font-weight:700}
+.kpi em{display:block;font-style:normal;font-size:.72rem;font-weight:700;margin-top:2px;color:var(--faint)}
+.kpi em.up{color:var(--ok)} .kpi em.down{color:var(--red)}
+.kpi.bad b{color:var(--red)}
+
+.split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px}
+.bars{display:grid;gap:7px}
+.brow{display:grid;grid-template-columns:110px minmax(0,1fr) 62px;gap:10px;align-items:center;font-size:.8rem}
+.brow .nm{font-weight:700;display:flex;align-items:center;gap:6px;min-width:0}
+.brow .nm i{width:8px;height:8px;border-radius:2px;flex:none}
+.brow .tr{position:relative;height:22px}
+.brow .tr span{position:absolute;left:0;height:9px;border-radius:3px}
+.brow .tr .a{top:1px}
+.brow .tr .b{top:12px;opacity:.38}
+.brow .v{font-family:var(--mono);font-size:.74rem;text-align:right;color:var(--muted)}
+.brow.top .v{color:var(--red);font-weight:500}
+.brow.top .nm{color:var(--red)}
+.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.72rem;color:var(--muted);font-weight:600;margin-top:8px}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg .sw{width:14px;height:7px;border-radius:2px;background:var(--ink)}
+.leg .sw.b{opacity:.38}
+.callout{margin-top:10px;background:#FCF1EE;border:1px solid #F1CFC6;border-radius:10px;padding:9px 11px;font-size:.84rem;color:#6E2A1C}
+.callout b{color:#8E2E1D}
+
+.dist svg,.heat svg,.trace svg{display:block;width:100%;height:auto}
+.heat{overflow-x:auto}
+.heat svg rect.cell{cursor:pointer}
+.heat svg rect.cell:hover{stroke:var(--ink);stroke-width:1.5}
+.heat svg rect.sel{stroke:var(--ink);stroke-width:2}
+.hl{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--muted);font-weight:600}
+.hl .grad{width:120px;height:8px;border-radius:4px;background:linear-gradient(90deg,#EEF0F3,#F2C9BE,#C8462F)}
+
+.rank{width:100%;border-collapse:collapse;font-size:.82rem}
+.rank th{text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:800;padding:4px 6px;border-bottom:1px solid var(--line)}
+.rank td{padding:6px;border-bottom:1px solid var(--soft)}
+.rank td.n{font-family:var(--mono);font-size:.76rem;text-align:right}
+.rank th.n{text-align:right}
+.rank tr{cursor:pointer}
+.rank tr:hover td{background:#FAFAFC}
+.meter{display:inline-block;width:54px;height:6px;border-radius:3px;background:var(--soft);vertical-align:middle;margin-left:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ok)}
+.meter i.mid{background:var(--amber)} .meter i.low{background:var(--red)}
+
+/* side panel */
+.panel{position:sticky;top:12px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--float);display:flex;flex-direction:column;max-height:calc(100vh - 24px);min-height:0}
+.tabs{display:flex;gap:2px;padding:6px;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 4px;font-weight:700;font-size:.8rem;color:var(--muted);position:relative}
+.tabs button[aria-selected="true"]{background:var(--soft);color:var(--ink)}
+.tabs .dot{position:absolute;top:5px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.pane{padding:12px 14px 16px;overflow:auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.pane>*{flex:none;min-width:0}
+form.ask{display:flex;gap:6px}
+form.ask input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;font-size:.86rem}
+form.ask input:focus{border-color:var(--ink);outline:none}
+.examples{display:flex;flex-direction:column;gap:5px}
+.ex{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;font-weight:600;font-size:.78rem;text-align:left;color:var(--muted)}
+.ex:hover{border-color:var(--ink);color:var(--ink)}
+.answer{background:var(--soft);border-radius:12px;padding:11px 12px;font-size:.86rem;display:grid;gap:6px}
+.answer .q{font-weight:800}
+.answer .parsed{display:flex;flex-wrap:wrap;gap:4px}
+.answer .parsed span{font-family:var(--mono);font-size:.68rem;background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+.answer p{margin:0}
+.answer ul{margin:0;padding-left:18px;display:grid;gap:3px}
+.badge{font-family:var(--mono);font-size:.66rem;font-weight:500;border:1px solid var(--line);background:#fff;border-radius:6px;padding:1px 6px;color:var(--muted)}
+.fgrp{display:grid;gap:6px}
+.lev{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px 11px;cursor:pointer}
+.lev input{margin:3px 0 0;accent-color:var(--ink);width:16px;height:16px}
+.lev b{font-size:.86rem}
+.lev span{grid-column:2;font-size:.78rem;color:var(--muted)}
+.lev.on{border-color:var(--ink);background:#FAFAFC}
+.cmp{width:100%;border-collapse:collapse;font-size:.8rem}
+.cmp th{text-align:right;font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:800;padding:4px 5px;border-bottom:1px solid var(--line)}
+.cmp th:first-child{text-align:left}
+.cmp td{padding:6px 5px;border-bottom:1px solid var(--soft);text-align:right;font-family:var(--mono);font-size:.76rem}
+.cmp td:first-child{text-align:left;font-family:var(--ui);font-size:.8rem;font-weight:600}
+.cmp .up{color:var(--ok);font-weight:500} .cmp .down{color:var(--red);font-weight:500}
+.note{font-size:.78rem;color:var(--muted)}
+.method p{margin:0;font-size:.84rem;color:var(--muted)}
+.method h3{margin:4px 0 0;font-size:.88rem}
+.method ul{margin:0;padding-left:18px;font-size:.82rem;color:var(--muted);display:grid;gap:3px}
+.method a{color:var(--acc)}
+
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.how h3{margin:0 0 4px;font-size:1rem}
+.how p{margin:0;font-size:.88rem;color:var(--muted)}
+footer{margin-top:22px;font-size:.82rem;color:var(--muted)}
+footer a{color:inherit}
+.busy{opacity:.55;transition:opacity .15s}
+
+@media (max-width:1100px){
+  .console{grid-template-columns:minmax(0,1fr)}
+  .panel{position:static;max-height:none;order:-1}
+  .pane{max-height:560px}
+}
+@media (max-width:820px){
+  .split{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis .kpi:first-child{grid-column:1/-1}
+  .how{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .wrap{padding-inline:14px}
+  header .code,.crumb{display:none}
+  .brow{grid-template-columns:92px minmax(0,1fr) 54px;gap:8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/></svg></span>Turnaround</div>
+    <span class="crumb">Core lab · Oct 2026 · simulated</span>
+    <a class="code" href="https://github.com/ShreyaSairam/shreyasairam.github.io/tree/main/lab-turnaround">Code</a>
+    <a class="home" href="../">Portfolio</a>
+  </header>
+
+  <div class="intro">
+    <h1>Where does a blood test lose its hour?</h1>
+    <p class="lede">An urgent test should be back with the doctor within 60 minutes of being ordered. This console follows 11,800 samples through a month in a hospital core lab, from the order to the released result, and shows which step makes the late ones late. Ask it a question, drill into any hour, or try a fix and see if it actually helps.</p>
+  </div>
+
+  <div class="console">
+    <div class="main" id="main">
+      <div class="scope" id="scope"></div>
+      <div class="kpis" id="kpis"></div>
+
+      <div class="split">
+        <section class="card">
+          <div class="chead"><h2>What makes late samples late</h2><small>average minutes per stage</small></div>
+          <div class="bars" id="bars"></div>
+          <div class="leg"><span><i class="sw"></i>Late samples</span><span><i class="sw b"></i>On time samples</span></div>
+          <div class="callout" id="callout"></div>
+        </section>
+        <section class="card">
+          <div class="chead"><h2>Turnaround distribution</h2><small id="dist-sub"></small></div>
+          <div class="dist" id="dist"></div>
+          <div class="chead" style="margin:12px 0 4px"><h2>By ward</h2><small>click a row to filter</small></div>
+          <table class="rank" id="rank"></table>
+        </section>
+      </div>
+
+      <section class="card">
+        <div class="chead">
+          <h2>When it goes wrong</h2>
+          <div class="row">
+            <div class="seg" id="hmetric"><button type="button" data-m="late" aria-pressed="true">Late %</button><button type="button" data-m="p90" aria-pressed="false">90th pct TAT</button><button type="button" data-m="vol" aria-pressed="false">Volume</button></div>
+            <span class="hl"><span id="hl-lo"></span><span class="grad"></span><span id="hl-hi"></span></span>
+          </div>
+        </div>
+        <div class="heat" id="heat"></div>
+        <p class="note" style="margin:6px 0 0">Each cell is one hour of one day, by order time. Click a cell to trace its samples.</p>
+      </section>
+
+      <section class="card" id="trace-card">
+        <div class="chead"><h2 id="trace-title">Sample journeys</h2><small id="trace-sub"></small></div>
+        <div class="trace" id="trace"></div>
+        <div class="leg" id="stage-leg"></div>
+      </section>
+    </div>
+
+    <aside class="panel" aria-label="Console">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="ask" aria-selected="true">Ask</button>
+        <button type="button" role="tab" data-tab="filter" aria-selected="false">Filter</button>
+        <button type="button" role="tab" data-tab="whatif" aria-selected="false">What if<span class="dot" id="wdot" hidden></span></button>
+        <button type="button" role="tab" data-tab="method" aria-selected="false">Method</button>
+      </div>
+      <div class="pane" data-pane="ask">
+        <div class="lbl">Ask about turnaround</div>
+        <form class="ask" id="ask" autocomplete="off">
+          <input id="q" placeholder="e.g. Why are urgent ward samples late?" aria-label="Question about turnaround">
+          <button class="btn" type="submit">Ask</button>
+        </form>
+        <div class="examples" id="examples"></div>
+        <div class="answer" id="answer" hidden></div>
+      </div>
+      <div class="pane" data-pane="filter" hidden>
+        <div class="fgrp"><span class="lbl">Priority</span><div class="seg" id="f-pri"><button type="button" data-v="0" aria-pressed="true">Urgent</button><button type="button" data-v="1" aria-pressed="false">Routine</button><button type="button" data-v="" aria-pressed="false">All</button></div></div>
+        <div class="fgrp"><span class="lbl">Ward</span><div class="row" id="f-ward"></div></div>
+        <div class="fgrp"><span class="lbl">Test</span><div class="row" id="f-test"></div></div>
+        <div class="fgrp"><span class="lbl">Ordered</span><div class="seg" id="f-hours"><button type="button" data-v="" aria-pressed="true">Any time</button><button type="button" data-v="22,7" aria-pressed="false">Night</button><button type="button" data-v="6,9" aria-pressed="false">06–09</button><button type="button" data-v="9,17" aria-pressed="false">Day</button><button type="button" data-v="17,22" aria-pressed="false">Evening</button></div></div>
+        <div class="fgrp"><span class="lbl">Days</span><div class="seg" id="f-dows"><button type="button" data-v="" aria-pressed="true">All</button><button type="button" data-v="0,1,2,3,4" aria-pressed="false">Weekdays</button><button type="button" data-v="5,6" aria-pressed="false">Weekends</button></div></div>
+        <button class="btn ghost sm" type="button" id="f-clear" style="justify-self:start;align-self:flex-start">Reset filters</button>
+      </div>
+      <div class="pane" data-pane="whatif" hidden>
+        <div class="lbl">Change the lab, rerun the month</div>
+        <p class="note" style="margin:0">Each fix reruns the full simulation on the same patients and the same orders, so any difference comes from the change alone.</p>
+        <div class="fgrp" id="levers"></div>
+        <div id="cmp"></div>
+        <button class="btn ghost sm" type="button" id="w-clear" style="align-self:flex-start">Back to the current lab</button>
+      </div>
+      <div class="pane method" data-pane="method" hidden>
+        <h3>The data</h3>
+        <p>There is no public sample-level turnaround dataset, so this one is simulated. I used real lab targets and real processes, and kept each sample's timestamps honest: every tube queues for the same people and machines as every other tube.</p>
+        <h3>What is modelled</h3>
+        <ul>
+          <li>Five wards with their own order patterns, including the 06:00 morning bloods on the wards</li>
+          <li>Pneumatic tube from ED and ICU, porters elsewhere, one porter overnight</li>
+          <li>A reception rota with a handover gap, and urgent bags that are not always spotted</li>
+          <li>Two centrifuges that batch tubes, daily QC on the chemistry line, Wednesday maintenance</li>
+          <li>Haemolysed samples rejected and taken again, and results that need a scientist to release them</li>
+          <li>An unplanned pneumatic tube outage on Friday 16 October, 11:00 to 16:30</li>
+        </ul>
+        <h3>Targets</h3>
+        <p>Urgent: result within 60 minutes of the order, the usual ED expectation for tests like troponin. Routine: within 4 hours.</p>
+        <h3>How to read it</h3>
+        <p>“What makes late samples late” compares the average minutes at each stage for late and on time samples. The stage with the biggest gap is where delay comes from, not just where time is spent.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="how">
+    <div class="card"><h3>1. Measure every stage</h3><p>Order, collection, transport, booking in, centrifuge, analyser queue, assay and release. The slowest stage on average is the assay, but that's not where the late samples lose their time. Comparing late with on time shows the real bottleneck.</p></div>
+    <div class="card"><h3>2. Questions to queries</h3><p>A small parser turns a question like “why were urgent bloods from the wards late at night?” into filters and an intent: why, which ward, which test, what time. The answer shows exactly what it understood, so you can check it.</p></div>
+    <div class="card"><h3>3. Test the fix first</h3><p>A queueing simulation reruns the month with one change: an earlier reception shift, QC moved out of the morning peak, another porter or another centrifuge. Some fixes help a lot. Buying another centrifuge barely moves the number.</p></div>
+  </div>
+  <footer>A portfolio project on simulated data, built to show how I'd analyse lab turnaround. Not real patient data. <a href="../">Back to portfolio</a></footer>
+</div>
+
+<script src="sim.js"></script>
+<script>
+(function () {
+  "use strict";
+  var T = window.LabTAT, $ = function (id) { return document.getElementById(id); };
+  var SCOL = { collect: "#94A3B8", recollect: "#E5634B", transport: "#C99A1E", reception: "#5B6CD9", spin: "#8E6BC9", queue: "#D9822B", assay: "#2E8B6E", verify: "#3AA6B9" };
+  var WSHORT = { "ED": "ED", "ICU": "ICU", "Ward 4 (Medical)": "Ward 4", "Ward 7 (Surgical)": "Ward 7", "Outpatients": "Outpatients" };
+  var CAUSE = {
+    reception: "Tubes waited to be booked in. Only one reception officer is on until 08:00, exactly when the morning ward bloods arrive, and an urgent bag in the pile is not always spotted.",
+    transport: "Tubes waited for a porter. The wards have no pneumatic tube, so an urgent sample needs a porter call, and overnight one porter covers the whole hospital.",
+    queue: "Tubes waited for the analyser. Daily QC takes the chemistry line down from 08:00 to 08:36, in the middle of the morning peak.",
+    recollect: "Haemolysed samples were rejected and had to be taken again. That costs the patient a second needle and the sample most of its hour.",
+    collect: "The wait was before the lab: the order sat until someone took the blood.",
+    spin: "Tubes waited for a centrifuge batch to fill or for a free centrifuge.",
+    verify: "Results outside the autoverification rules waited for a scientist to release them.",
+    assay: "The assay itself. Troponin takes 18 minutes on the analyser, so it has the least slack."
+  };
+  function why(k, late) {
+    var n = late.length || 1, frac = function (fn) { return late.filter(fn).length / n; };
+    var hr = function (s, a, b) { var h = T.hourOf(s.recv); return a <= b ? h >= a && h < b : h >= a || h < b; };
+    if (k === "reception") {
+      if (frac(function (s) { return hr(s, 6, 9); }) > 0.45) return CAUSE.reception;
+      if (frac(function (s) { return hr(s, 22, 7); }) > 0.45) return "Tubes waited to be booked in. One reception officer covers the night, and an urgent bag in the pile is not always spotted.";
+      return "Tubes waited to be booked in. Urgent bags are not always spotted at reception, so they queue behind routine work.";
+    }
+    if (k === "transport") {
+      if (frac(function (s) { return s.tubeOut; }) > 0.3) return "The pneumatic tube was down on Fri 16 Oct from 11:00 to 16:30, so ED and ICU tubes waited for a porter instead of arriving in four minutes.";
+      if (frac(function (s) { return T.hourOf(s.collect) >= 22 || T.hourOf(s.collect) < 7; }) > 0.45) return "Tubes waited for a porter. Overnight one porter covers the whole hospital, so a ward pickup takes close to half an hour.";
+      return CAUSE.transport;
+    }
+    if (k === "queue" && frac(function (s) { var h = T.hourOf(s.spinEnd); return h >= 8 && h < 9; }) < 0.4) return "Tubes waited for the analyser, often during Wednesday maintenance when one chemistry module is down from 10:00 to 11:30.";
+    return CAUSE[k];
+  }
+  var EXAMPLES = ["Why are urgent ward samples late?", "When do urgent samples miss the 60 minute target?", "Why were ED samples late on Friday 16 Oct?", "Which ward has the slowest urgent results at night?", "Which test is late most often in the morning?"];
+
+  var base = T.simulate(), cur = base, levers = {}, metric = "late", sel = null, tab = "ask";
+  var F = { wards: [], tests: [], pri: 0, hours: null, dows: [], date: null };
+
+  function fmtMin(m) { if (m === null || m === undefined) return "–"; m = Math.round(m); return m < 120 ? m + " min" : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0"); }
+  function fmtPct(x) { return x === null || x === undefined ? "–" : Math.round(x * 100) + "%"; }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function subset(data, extra) { return T.applyFilter(data || cur, Object.assign({}, F, extra || {})); }
+  function hoursLabel(h) { return String(h[0]).padStart(2, "0") + ":00–" + String(h[1]).padStart(2, "0") + ":00"; }
+  var DOWN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function scopeParts(f) {
+    var p = [];
+    p.push(f.pri === 0 ? "Urgent" : f.pri === 1 ? "Routine" : "All priorities");
+    if (f.wards && f.wards.length) p.push(f.wards.map(function (w) { return WSHORT[w]; }).join(", "));
+    if (f.tests && f.tests.length) p.push(f.tests.join(", "));
+    if (f.date !== null && f.date !== undefined) p.push(T.dateLabel(f.date));
+    if (f.dows && f.dows.length) p.push(f.dows.length === 5 && f.dows.indexOf(5) < 0 ? "Weekdays" : f.dows.length === 2 && f.dows.indexOf(5) >= 0 && f.dows.indexOf(6) >= 0 ? "Weekends" : f.dows.map(function (d) { return DOWN[d]; }).join(", "));
+    if (f.hours) p.push("Ordered " + hoursLabel(f.hours));
+    return p;
+  }
+
+  // ---------------- render ----------------
+  function render() {
+    var list = subset(), b0 = T.applyFilter(base, F);
+    var sc = scopeParts(F).map(function (x) { return "<span class='pill'>" + esc(x) + "</span>"; }).join("");
+    var scen = Object.keys(levers).filter(function (k) { return levers[k]; });
+    $("scope").innerHTML = "<span class='lbl'>Showing</span>" + sc + (scen.length ? "<span class='pill scn'>Scenario: " + scen.map(function (k) { return T.LEVERS[k].name.toLowerCase(); }).join(" + ") + "</span>" : "") + "<button type='button' id='scope-clear'>Reset</button>";
+    renderKpis(list, scen.length ? b0 : null);
+    renderBars(list); renderDist(list); renderRank(); renderHeat(); renderTrace();
+  }
+
+  function delta(a, b, better, unit) {
+    if (a === null || b === null || a === undefined || b === undefined) return "";
+    var d = a - b; if (Math.abs(d) < (unit === "%" ? 0.005 : 0.5)) return "<em>no change</em>";
+    var good = better === "up" ? d > 0 : d < 0;
+    var txt = unit === "%" ? (d > 0 ? "+" : "") + Math.round(d * 100) + " pts" : (d > 0 ? "+" : "") + Math.round(d) + " min";
+    return "<em class='" + (good ? "up" : "down") + "'>" + txt + " vs today</em>";
+  }
+  function renderKpis(list, b) {
+    var s = T.summary(list), o = b ? T.summary(b) : null, late = list.filter(function (x) { return x.late; }).length;
+    var tgt = F.pri === 1 ? "4 h" : F.pri === 0 ? "60 min" : "target";
+    var k = function (v, l, cls, d) { return "<div class='kpi " + (cls || "") + "'><b class='num'>" + v + "</b><span>" + l + "</span>" + (d || "") + "</div>"; };
+    $("kpis").innerHTML =
+      k(s.n.toLocaleString("en-AU"), "Samples in view", "", "<em>" + late.toLocaleString("en-AU") + " missed their target</em>") +
+      k(fmtPct(s.onTime), "Within " + tgt, s.onTime !== null && s.onTime < 0.8 ? "bad" : "", o ? delta(s.onTime, o.onTime, "up", "%") : "") +
+      k(fmtMin(s.median), "Median turnaround", "", o ? delta(s.median, o.median, "down") : "") +
+      k(fmtMin(s.p90), "90th percentile", "", o ? delta(s.p90, o.p90, "down") : "<em>1 in 10 slower than this</em>") +
+      k(s.recollect, "Recollected", "", "<em>haemolysed, taken again</em>");
+  }
+
+  function renderBars(list) {
+    var b = T.bottleneck(list).filter(function (x) { return x.late !== null || x.ok !== null; });
+    var late = list.filter(function (s) { return s.late; }).length;
+    if (!list.length) { $("bars").innerHTML = "<p class='note'>No samples match these filters.</p>"; $("callout").hidden = true; return; }
+    var mx = Math.max.apply(null, b.map(function (x) { return Math.max(x.late || 0, x.ok || 0); })) || 1;
+    var top = late >= 5 ? b.slice().sort(function (x, y) { return (y.excess || -1e9) - (x.excess || -1e9); })[0] : null;
+    $("bars").innerHTML = b.map(function (x) {
+      var isTop = top && x.k === top.k;
+      return "<div class='brow" + (isTop ? " top" : "") + "'><span class='nm'><i style='background:" + SCOL[x.k] + "'></i>" + x.name + "</span><span class='tr'>" +
+        (x.late !== null ? "<span class='a' style='width:" + (100 * Math.max(0, x.late) / mx).toFixed(1) + "%;background:" + SCOL[x.k] + "'></span>" : "") +
+        "<span class='b' style='width:" + (100 * Math.max(0, x.ok || 0) / mx).toFixed(1) + "%;background:" + SCOL[x.k] + "'></span></span><span class='v num'>" +
+        (x.late !== null ? (x.excess >= 0 ? "+" : "") + x.excess.toFixed(1) : "–") + "</span></div>";
+    }).join("");
+    if (top && top.excess > 0.5) {
+      $("callout").hidden = false;
+      var second = b.slice().sort(function (x, y) { return (y.excess || -1e9) - (x.excess || -1e9); })[1];
+      $("callout").innerHTML = "<b>" + top.name + " adds " + top.excess.toFixed(0) + " min on average</b> to the " + late.toLocaleString("en-AU") + " late samples, more than any other stage" + (second && second.excess > 2 ? " (then " + second.name.toLowerCase() + ", +" + second.excess.toFixed(0) + " min)" : "") + ". " + why(top.k, list.filter(function (s) { return s.late; }));
+    } else { $("callout").hidden = false; $("callout").innerHTML = late ? "Too few late samples here to name a bottleneck." : "<b>Every sample in view met its target.</b>"; }
+  }
+
+  function renderDist(list) {
+    var tgt = F.pri === 1 ? 240 : 60, mx = F.pri === 1 ? 300 : 150, bins = 30, bw = mx / bins, c = [], i;
+    for (i = 0; i < bins; i++) c.push(0);
+    var over = 0;
+    list.forEach(function (s) { var k = Math.floor(s.tat / bw); if (k >= bins) over++; else c[k]++; });
+    var cm = Math.max.apply(null, c.concat([over, 1])), W = 460, Hh = 150, pl = 6, pb = 18, w1 = (W - pl * 2) / (bins + 1);
+    var y = function (v) { return Hh - pb - (Hh - pb - 8) * v / cm; };
+    var svg = "<svg viewBox='0 0 " + W + " " + Hh + "' role='img' aria-label='Histogram of turnaround times'>";
+    c.forEach(function (v, k) { var x0 = pl + k * w1, lateBin = (k + 1) * bw > tgt; svg += "<rect x='" + (x0 + 1).toFixed(1) + "' y='" + y(v).toFixed(1) + "' width='" + (w1 - 2).toFixed(1) + "' height='" + (Hh - pb - y(v)).toFixed(1) + "' rx='2' fill='" + (lateBin ? "#E39A88" : "#9FB0D8") + "'><title>" + Math.round(k * bw) + "–" + Math.round((k + 1) * bw) + " min: " + v + " samples</title></rect>"; });
+    var xo = pl + bins * w1;
+    svg += "<rect x='" + (xo + 1).toFixed(1) + "' y='" + y(over).toFixed(1) + "' width='" + (w1 - 2).toFixed(1) + "' height='" + (Hh - pb - y(over)).toFixed(1) + "' rx='2' fill='#C8462F'><title>Over " + mx + " min: " + over + " samples</title></rect>";
+    var tx = pl + tgt / bw * w1;
+    svg += "<line x1='" + tx + "' x2='" + tx + "' y1='4' y2='" + (Hh - pb) + "' stroke='#14213D' stroke-dasharray='3 3'/><text x='" + (tx + 4) + "' y='13' font-size='10' font-weight='700' fill='#14213D' font-family='Manrope,sans-serif'>target " + tgt + " min</text>";
+    svg += "<line x1='" + pl + "' x2='" + (W - pl) + "' y1='" + (Hh - pb) + "' y2='" + (Hh - pb) + "' stroke='#E2E4E9'/>";
+    [0, mx / 2].forEach(function (v) { svg += "<text x='" + (pl + v / bw * w1) + "' y='" + (Hh - 4) + "' font-size='9.5' fill='#8A91A0' text-anchor='" + (v === 0 ? "start" : "middle") + "' font-family='IBM Plex Mono,monospace'>" + v + "</text>"; });
+    svg += "<text x='" + (W - pl) + "' y='" + (Hh - 4) + "' font-size='9.5' fill='#8A91A0' text-anchor='end' font-family='IBM Plex Mono,monospace'>" + mx + "+ min</text></svg>";
+    $("dist").innerHTML = svg;
+    $("dist-sub").textContent = "minutes from order to result";
+  }
+
+  function renderRank() {
+    var rows = T.WARDS.map(function (w) {
+      var l = T.applyFilter(cur, Object.assign({}, F, { wards: [w] })), s = T.summary(l);
+      return { w: w, s: s };
+    }).filter(function (r) { return r.s.n; }).sort(function (a, b) { return a.s.onTime - b.s.onTime; });
+    $("rank").innerHTML = "<thead><tr><th>Ward</th><th class='n'>Samples</th><th class='n'>On time</th><th class='n'>90th pct</th></tr></thead><tbody>" +
+      (rows.length ? rows.map(function (r) {
+        var p = r.s.onTime, cls = p < 0.7 ? "low" : p < 0.85 ? "mid" : "";
+        var on = F.wards.length === 1 && F.wards[0] === r.w;
+        return "<tr data-w='" + esc(r.w) + "'" + (on ? " style='font-weight:800'" : "") + "><td>" + esc(r.w) + "</td><td class='n'>" + r.s.n.toLocaleString("en-AU") + "</td><td class='n'>" + fmtPct(p) + "<span class='meter'><i class='" + cls + "' style='width:" + Math.round(p * 100) + "%'></i></span></td><td class='n'>" + fmtMin(r.s.p90) + "</td></tr>";
+      }).join("") : "<tr><td colspan='4' class='note'>No samples.</td></tr>") + "</tbody>";
+  }
+
+  function heatColor(v) {
+    // 0 -> #EEF0F3, 0.5 -> #F2C9BE, 1 -> #C8462F
+    var a = [238, 240, 243], b = [242, 201, 190], c = [200, 70, 47], t = Math.max(0, Math.min(1, v)), p, q, u;
+    if (t < 0.5) { p = a; q = b; u = t / 0.5; } else { p = b; q = c; u = (t - 0.5) / 0.5; }
+    return "rgb(" + [0, 1, 2].map(function (i) { return Math.round(p[i] + (q[i] - p[i]) * u); }).join(",") + ")";
+  }
+  function renderHeat() {
+    var f = Object.assign({}, F, { hours: null, date: null, dows: F.dows });
+    var list = T.applyFilter(cur, f), grid = {};
+    list.forEach(function (s) { var k = T.dayOf(s.order) + "," + T.hourOf(s.order); (grid[k] = grid[k] || []).push(s); });
+    var vals = {}, mxv = 0, tgt = F.pri === 1 ? 240 : 60;
+    Object.keys(grid).forEach(function (k) {
+      var g = grid[k];
+      var v = metric === "late" ? (g.length >= 2 ? g.filter(function (s) { return s.late; }).length / g.length : null) : metric === "p90" ? (g.length >= 3 ? T.pct(g.map(function (s) { return s.tat; }), .9) : null) : g.length;
+      vals[k] = v; if (v !== null && v > mxv) mxv = v;
+    });
+    var scale = metric === "late" ? 1 : metric === "p90" ? Math.max(tgt * 1.8, 1) : Math.max(mxv, 1);
+    $("hl-lo").textContent = metric === "late" ? "0%" : metric === "p90" ? "0" : "0";
+    $("hl-hi").textContent = metric === "late" ? "100% late" : metric === "p90" ? fmtMin(scale) + "+" : Math.round(scale) + " samples";
+    var cw = 26, ch = 15, pl = 82, pt = 18, W = pl + 24 * cw + 4, Hh = pt + T.DAYS * ch + 6;
+    var svg = "<svg viewBox='0 0 " + W + " " + Hh + "' role='img' aria-label='Heatmap of turnaround by day and hour' style='min-width:640px'>";
+    for (var h = 0; h < 24; h += 3) svg += "<text x='" + (pl + h * cw + 2) + "' y='12' font-size='9.5' fill='#8A91A0' font-family='IBM Plex Mono,monospace'>" + String(h).padStart(2, "0") + ":00</text>";
+    for (var d = 0; d < T.DAYS; d++) {
+      var dl = T.dateLabel(d), we = d % 7 >= 5, hasOut = T.TUBE_DOWN.some(function (w) { return Math.floor(w[0] / 1440) === d; });
+      svg += "<text x='" + (pl - 8) + "' y='" + (pt + d * ch + 11) + "' font-size='9.5' text-anchor='end' fill='" + (we ? "#8A91A0" : "#5E6676") + "' font-weight='" + (we ? 500 : 600) + "' font-family='Manrope,sans-serif'>" + (hasOut ? "⚠ " : "") + dl + "</text>";
+      if (d % 7 === 0 && d) svg += "<line x1='" + (pl - 76) + "' x2='" + (W - 4) + "' y1='" + (pt + d * ch - 0.5) + "' y2='" + (pt + d * ch - 0.5) + "' stroke='#D5D9E1'/>";
+      for (h = 0; h < 24; h++) {
+        var k = d + "," + h, v = vals[k], g = grid[k] || [];
+        var fill = v === null || v === undefined ? "#F7F8FA" : heatColor(metric === "vol" ? v / scale : metric === "p90" ? v / scale : v);
+        var tip = dl + " " + String(h).padStart(2, "0") + ":00 · " + g.length + " samples" + (g.length ? " · " + g.filter(function (s) { return s.late; }).length + " late · 90th pct " + fmtMin(T.pct(g.map(function (s) { return s.tat; }), .9)) : "");
+        var isSel = sel && sel[0] === d && sel[1] === h;
+        svg += "<rect class='cell" + (isSel ? " sel" : "") + "' data-c='" + k + "' x='" + (pl + h * cw + 1) + "' y='" + (pt + d * ch + 1) + "' width='" + (cw - 2) + "' height='" + (ch - 2) + "' rx='2.5' fill='" + fill + "'><title>" + tip + "</title></rect>";
+      }
+    }
+    // outline the hours/dow filter
+    if (F.hours) {
+      var segs = F.hours[0] < F.hours[1] ? [[F.hours[0], F.hours[1]]] : [[F.hours[0], 24], [0, F.hours[1]]];
+      segs.forEach(function (sg) { svg += "<rect x='" + (pl + sg[0] * cw) + "' y='" + pt + "' width='" + ((sg[1] - sg[0]) * cw) + "' height='" + (T.DAYS * ch) + "' fill='none' stroke='#14213D' stroke-width='1.5' stroke-dasharray='4 3' rx='3' pointer-events='none'/>"; });
+    }
+    if (F.date !== null && F.date !== undefined) svg += "<rect x='" + pl + "' y='" + (pt + F.date * ch) + "' width='" + (24 * cw) + "' height='" + ch + "' fill='none' stroke='#14213D' stroke-width='1.5' rx='3' pointer-events='none'/>";
+    svg += "</svg>";
+    $("heat").innerHTML = svg;
+  }
+
+  function renderTrace() {
+    var list, title, sub;
+    if (sel) {
+      list = T.applyFilter(cur, Object.assign({}, F, { hours: null, date: null, cell: sel }));
+      title = "Samples ordered " + T.dateLabel(sel[0]) + ", " + String(sel[1]).padStart(2, "0") + ":00–" + String(sel[1] + 1).padStart(2, "0") + ":00";
+    } else {
+      list = subset().filter(function (s) { return s.late; }).sort(function (a, b) { return b.tat - a.tat; });
+      title = "Slowest samples in view";
+    }
+    list = list.slice().sort(function (a, b) { return a.order - b.order; });
+    if (!sel) list = subset().filter(function (s) { return s.late; }).sort(function (a, b) { return b.tat - a.tat; }).slice(0, 14);
+    var shown = list.slice(0, 16);
+    sub = sel ? list.length + " samples · " + list.filter(function (s) { return s.late; }).length + " late" + (list.length > 16 ? " · showing 16" : "") : "click a cell above to trace one hour";
+    $("trace-title").textContent = title; $("trace-sub").textContent = sub;
+    if (!shown.length) { $("trace").innerHTML = "<p class='note'>" + (sel ? "No samples in this hour for the current filters." : "No late samples in view.") + "</p>"; return; }
+    var mx = Math.max(F.pri === 1 ? 260 : 100, Math.max.apply(null, shown.map(function (s) { return s.tat; })) * 1.04);
+    var W = 900, pl = 232, rh = 22, pt = 18, Hh = pt + shown.length * rh + 8, sx = function (m) { return pl + (W - pl - 70) * m / mx; };
+    var svg = "<svg viewBox='0 0 " + W + " " + Hh + "' role='img' aria-label='Timeline of each sample by stage'>";
+    var step = mx > 200 ? 60 : 15;
+    for (var g = 0; g <= mx; g += step) svg += "<line x1='" + sx(g) + "' x2='" + sx(g) + "' y1='" + (pt - 4) + "' y2='" + (Hh - 6) + "' stroke='#EEF0F3'/><text x='" + sx(g) + "' y='11' font-size='9' text-anchor='middle' fill='#8A91A0' font-family='IBM Plex Mono,monospace'>" + g + "</text>";
+    var tgts = {}; shown.forEach(function (s) { tgts[s.target] = 1; });
+    Object.keys(tgts).forEach(function (t) { if (+t <= mx) svg += "<line x1='" + sx(+t) + "' x2='" + sx(+t) + "' y1='" + (pt - 4) + "' y2='" + (Hh - 6) + "' stroke='#14213D' stroke-dasharray='3 3'/>"; });
+    shown.forEach(function (s, i) {
+      var y = pt + i * rh, x = 0;
+      svg += "<text x='0' y='" + (y + 14) + "' font-size='10.5' font-weight='700' fill='#14213D' font-family='Manrope,sans-serif'>" + T.clock(s.order) + " · " + esc(WSHORT[s.ward]) + " · " + s.test + "</text>";
+      svg += "<text x='" + (pl - 10) + "' y='" + (y + 14) + "' font-size='9' text-anchor='end' fill='" + (s.pri === 0 ? "#C8462F" : "#8A91A0") + "' font-weight='800' font-family='Manrope,sans-serif'>" + (s.pri === 0 ? "URGENT" : "ROUTINE") + "</text>";
+      T.STAGES.forEach(function (st) {
+        var v = s.st[st.k]; if (v <= 0.05) return;
+        svg += "<rect x='" + sx(x).toFixed(1) + "' y='" + (y + 4) + "' width='" + Math.max(1, sx(x + v) - sx(x)).toFixed(1) + "' height='13' fill='" + SCOL[st.k] + "'><title>" + st.name + ": " + v.toFixed(1) + " min</title></rect>";
+        x += v;
+      });
+      svg += "<text x='" + (sx(s.tat) + 6) + "' y='" + (y + 14) + "' font-size='10' font-family='IBM Plex Mono,monospace' fill='" + (s.late ? "#C8462F" : "#2E8B6E") + "' font-weight='500'>" + Math.round(s.tat) + " min" + (s.tubeOut ? " · tube down" : s.haem ? " · haemolysed" : "") + "</text>";
+    });
+    svg += "</svg>";
+    $("trace").innerHTML = svg;
+  }
+
+  // ---------------- ask ----------------
+  function ask(text) {
+    text = (text || "").trim(); if (!text) return;
+    var p = T.parseQuestion(text), f = p.filter;
+    if (f.pri === null && !/\ball\b/i.test(text)) f.pri = /\broutine\b/i.test(text) ? 1 : 0;
+    F = { wards: f.wards, tests: f.tests, pri: f.pri, hours: f.hours, dows: f.dows, date: f.date };
+    sel = null; syncFilters();
+    var list = subset(), s = T.summary(list), bits = [], html = "";
+    var tags = scopeParts(F).map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("") + "<span>intent: " + p.intent + "</span>";
+    if (!list.length) html = "<p>No samples match that. Try a ward, a test, a time of day or a date between 5 Oct and 1 Nov.</p>";
+    else if (p.intent === "ward" || p.intent === "test") {
+      var dim = p.intent === "ward" ? T.WARDS : T.TESTS, key = p.intent === "ward" ? "wards" : "tests";
+      var r = dim.map(function (v) { var o = {}; o[key] = [v]; var l = T.applyFilter(cur, Object.assign({}, F, o)); return { v: v, s: T.summary(l) }; }).filter(function (x) { return x.s.n >= 10; }).sort(function (a, b) { return a.s.onTime - b.s.onTime; });
+      if (!r.length) html = "<p>Too few samples to compare.</p>";
+      else {
+        html = "<p><b>" + esc(r[0].v) + "</b> does worst: " + fmtPct(r[0].s.onTime) + " on time, 90th percentile " + fmtMin(r[0].s.p90) + ".</p><ul>" +
+          r.map(function (x) { return "<li>" + esc(x.v) + ": " + fmtPct(x.s.onTime) + " on time (" + x.s.n + " samples)</li>"; }).join("") + "</ul>";
+        var o2 = {}; o2[key] = [r[0].v]; Object.assign(F, o2); syncFilters();
+        var bt = T.bottleneck(subset()).sort(function (a, b) { return (b.excess || -1e9) - (a.excess || -1e9); })[0];
+        if (bt && bt.excess > 1) html += "<p>For " + esc(r[0].v) + ", the main cause is " + bt.name.toLowerCase() + " (+" + bt.excess.toFixed(0) + " min on late samples). I've filtered the console to it.</p>";
+      }
+    } else if (p.intent === "hour") {
+      var byH = []; for (var h = 0; h < 24; h++) { var l = list.filter(function (x) { return T.hourOf(x.order) === h; }); if (l.length >= 8) byH.push({ h: h, s: T.summary(l) }); }
+      byH.sort(function (a, b) { return a.s.onTime - b.s.onTime; });
+      if (!byH.length) html = "<p>Too few samples to compare hours.</p>";
+      else {
+        var w = byH[0].h, w2 = byH.slice(0, 3).map(function (x) { return x.h; }).sort(function (a, b) { return a - b; });
+        html = "<p>The worst hour is <b>" + String(w).padStart(2, "0") + ":00–" + String(w + 1).padStart(2, "0") + ":00</b>: " + fmtPct(byH[0].s.onTime) + " on time against " + fmtPct(s.onTime) + " across the day. The three worst hours are " + w2.map(function (x) { return String(x).padStart(2, "0") + ":00"; }).join(", ") + ".</p>";
+        var hr = [Math.min.apply(null, w2), Math.max.apply(null, w2) + 1];
+        if (hr[1] - hr[0] <= 4) { F.hours = hr; syncFilters(); var bt2 = T.bottleneck(subset()).sort(function (a, b) { return (b.excess || -1e9) - (a.excess || -1e9); })[0]; if (bt2 && bt2.excess > 1) html += "<p>In those hours the extra delay is mostly " + bt2.name.toLowerCase() + " (+" + bt2.excess.toFixed(0) + " min). " + why(bt2.k, subset().filter(function (s) { return s.late; })) + "</p>"; }
+      }
+    } else if (p.intent === "day") {
+      var byD = []; for (var d = 0; d < T.DAYS; d++) { var ld = list.filter(function (x) { return T.dayOf(x.order) === d; }); if (ld.length >= 10) byD.push({ d: d, s: T.summary(ld) }); }
+      byD.sort(function (a, b) { return a.s.onTime - b.s.onTime; });
+      if (byD.length) { html = "<p>The worst day was <b>" + T.dateLabel(byD[0].d) + "</b>: " + fmtPct(byD[0].s.onTime) + " on time.</p>"; F.date = byD[0].d; syncFilters(); }
+    } else {
+      var late = list.filter(function (x) { return x.late; }), bn = T.bottleneck(list).sort(function (a, b) { return (b.excess || -1e9) - (a.excess || -1e9); });
+      html = "<p>" + list.length.toLocaleString("en-AU") + " samples, " + fmtPct(s.onTime) + " on time, " + late.length + " late. The 90th percentile is " + fmtMin(s.p90) + ".</p>";
+      if (late.length >= 3 && bn[0].excess > 0.5) {
+        html += "<p>Late samples lost most of their extra time at <b>" + bn[0].name.toLowerCase() + "</b> (+" + bn[0].excess.toFixed(0) + " min)" + (bn[1].excess > 2 ? ", then " + bn[1].name.toLowerCase() + " (+" + bn[1].excess.toFixed(0) + " min)" : "") + ".</p><p>" + why(bn[0].k, late) + "</p>";
+        var out = late.filter(function (x) { return x.tubeOut; }).length;
+        if (out && bn[0].k !== "transport") html += "<p>" + out + " of the late samples were sent by porter because the pneumatic tube was down on Fri 16 Oct, 11:00 to 16:30.</p>";
+      } else if (!late.length) html += "<p>None were late.</p>";
+    }
+    $("answer").hidden = false;
+    $("answer").innerHTML = "<div class='q'>" + esc(text) + "</div><div class='parsed'>" + tags + "</div>" + html;
+    render();
+  }
+
+  // ---------------- filters ----------------
+  function syncFilters() {
+    [].forEach.call($("f-pri").children, function (b) { var v = b.getAttribute("data-v"); b.setAttribute("aria-pressed", String(v === "" ? F.pri === null || F.pri === undefined : +v === F.pri)); });
+    [].forEach.call($("f-ward").children, function (b) { b.setAttribute("aria-pressed", F.wards.indexOf(b.getAttribute("data-v")) >= 0); });
+    [].forEach.call($("f-test").children, function (b) { b.setAttribute("aria-pressed", F.tests.indexOf(b.getAttribute("data-v")) >= 0); });
+    var hv = F.hours ? F.hours.join(",") : "";
+    [].forEach.call($("f-hours").children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === hv); });
+    var dv = F.dows && F.dows.length ? F.dows.slice().sort().join(",") : "";
+    [].forEach.call($("f-dows").children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === dv); });
+  }
+  function resetFilters() { F = { wards: [], tests: [], pri: 0, hours: null, dows: [], date: null }; sel = null; syncFilters(); render(); }
+
+  // ---------------- what if ----------------
+  var cache = {};
+  function runScenario() {
+    var keyS = Object.keys(T.LEVERS).filter(function (k) { return levers[k]; }).join("+");
+    $("main").classList.add("busy");
+    setTimeout(function () {
+      cur = keyS ? (cache[keyS] = cache[keyS] || T.simulate({ levers: levers })) : base;
+      $("main").classList.remove("busy");
+      $("wdot").hidden = !keyS;
+      renderCompare(); render();
+    }, 20);
+  }
+  function renderCompare() {
+    var on = Object.keys(levers).some(function (k) { return levers[k]; });
+    if (!on) { $("cmp").innerHTML = "<p class='note' style='margin:0'>Tick a change to rerun the month with it.</p>"; return; }
+    var rows = [
+      ["All urgent", { pri: 0 }], ["Urgent, ordered 06–09", { pri: 0, hours: [6, 9] }], ["Urgent, overnight", { pri: 0, hours: [22, 7] }],
+      ["Urgent, ED", { pri: 0, wards: ["ED"] }], ["Urgent, wards", { pri: 0, wards: ["Ward 4 (Medical)", "Ward 7 (Surgical)"] }], ["Routine, all", { pri: 1 }]
+    ];
+    var h = "<table class='cmp'><thead><tr><th>Within target</th><th>Today</th><th>With fix</th><th>Change</th></tr></thead><tbody>";
+    rows.forEach(function (r) {
+      var f = Object.assign({ wards: [], tests: [], hours: null, dows: [], date: null }, r[1]);
+      var a = T.summary(T.applyFilter(base, f)).onTime, b = T.summary(T.applyFilter(cur, f)).onTime, d = b - a;
+      h += "<tr><td>" + r[0] + "</td><td>" + fmtPct(a) + "</td><td>" + fmtPct(b) + "</td><td class='" + (d > 0.005 ? "up" : d < -0.005 ? "down" : "") + "'>" + (Math.abs(d) < 0.005 ? "0" : (d > 0 ? "+" : "") + Math.round(d * 100)) + " pts</td></tr>";
+    });
+    var p90a = T.summary(T.applyFilter(base, { pri: 0 })).p90, p90b = T.summary(T.applyFilter(cur, { pri: 0 })).p90;
+    h += "<tr><td>Urgent 90th pct</td><td>" + fmtMin(p90a) + "</td><td>" + fmtMin(p90b) + "</td><td class='" + (p90b < p90a - 0.5 ? "up" : p90b > p90a + 0.5 ? "down" : "") + "'>" + (Math.round(p90b - p90a) > 0 ? "+" : "") + Math.round(p90b - p90a) + " min</td></tr></tbody></table>";
+    $("cmp").innerHTML = h;
+  }
+
+  // ---------------- wire up ----------------
+  $("examples").innerHTML = EXAMPLES.map(function (e) { return "<button type='button' class='ex'>" + e + "</button>"; }).join("");
+  $("f-ward").innerHTML = T.WARDS.map(function (w) { return "<button type='button' class='chipf' data-v='" + esc(w) + "' aria-pressed='false'>" + esc(WSHORT[w]) + "</button>"; }).join("");
+  $("f-test").innerHTML = T.TESTS.map(function (t) { return "<button type='button' class='chipf' data-v='" + t + "' aria-pressed='false'>" + t + "</button>"; }).join("");
+  $("levers").innerHTML = Object.keys(T.LEVERS).map(function (k) { return "<label class='lev' data-k='" + k + "'><input type='checkbox' data-k='" + k + "'><b>" + T.LEVERS[k].name + "</b><span>" + T.LEVERS[k].desc + "</span></label>"; }).join("");
+  $("stage-leg").innerHTML = T.STAGES.map(function (s) { return "<span><i class='sw' style='background:" + SCOL[s.k] + ";opacity:1'></i>" + s.name + "</span>"; }).join("") + "<span><i class='sw' style='background:none;border-top:1px dashed #14213D;height:0'></i>Target</span>";
+
+  $("ask").addEventListener("submit", function (e) { e.preventDefault(); ask($("q").value); });
+  $("examples").addEventListener("click", function (e) { var b = e.target.closest(".ex"); if (b) { $("q").value = b.textContent; ask(b.textContent); } });
+  document.querySelector(".tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return; tab = b.getAttribute("data-tab");
+    [].forEach.call(document.querySelectorAll(".tabs button"), function (x) { x.setAttribute("aria-selected", x === b); });
+    [].forEach.call(document.querySelectorAll(".pane"), function (p) { p.hidden = p.getAttribute("data-pane") !== tab; });
+  });
+  $("f-pri").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var v = b.getAttribute("data-v"); F.pri = v === "" ? null : +v; syncFilters(); render(); });
+  $("f-ward").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var v = b.getAttribute("data-v"), i = F.wards.indexOf(v); if (i >= 0) F.wards.splice(i, 1); else F.wards.push(v); syncFilters(); render(); });
+  $("f-test").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var v = b.getAttribute("data-v"), i = F.tests.indexOf(v); if (i >= 0) F.tests.splice(i, 1); else F.tests.push(v); syncFilters(); render(); });
+  $("f-hours").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var v = b.getAttribute("data-v"); F.hours = v ? v.split(",").map(Number) : null; syncFilters(); render(); });
+  $("f-dows").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var v = b.getAttribute("data-v"); F.dows = v ? v.split(",").map(Number) : []; F.date = null; syncFilters(); render(); });
+  $("f-clear").addEventListener("click", resetFilters);
+  $("main").addEventListener("click", function (e) {
+    if (e.target.id === "scope-clear") { resetFilters(); return; }
+    var c = e.target.closest("rect.cell"); if (c) { var p = c.getAttribute("data-c").split(",").map(Number); sel = sel && sel[0] === p[0] && sel[1] === p[1] ? null : p; renderHeat(); renderTrace(); $("trace-card").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+    var tr = e.target.closest("#rank tr[data-w]"); if (tr) { var w = tr.getAttribute("data-w"); F.wards = F.wards.length === 1 && F.wards[0] === w ? [] : [w]; syncFilters(); render(); }
+  });
+  $("hmetric").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; metric = b.getAttribute("data-m"); [].forEach.call(this.children, function (x) { x.setAttribute("aria-pressed", x === b); }); renderHeat(); });
+  $("levers").addEventListener("change", function (e) { var k = e.target.getAttribute("data-k"); levers[k] = e.target.checked; e.target.closest(".lev").classList.toggle("on", e.target.checked); runScenario(); });
+  $("w-clear").addEventListener("click", function () { levers = {}; [].forEach.call(document.querySelectorAll("#levers input"), function (i) { i.checked = false; i.closest(".lev").classList.remove("on"); }); runScenario(); });
+
+  syncFilters(); renderCompare(); render();
+  window.__tat = { get cur() { return cur; }, get F() { return F; }, ask: ask, render: render, setLevers: function (l) { levers = l; runScenario(); } };
+})();
+</script>
+</body>
+</html>
