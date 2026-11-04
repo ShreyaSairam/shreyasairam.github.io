@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# Local data and build outputs (not needed to view the site)
+**/code/data/
+**/code/out/
+out-of-phase/code/frontier.json
+genetic-testing/code/gx_data.json
+genetic-testing/code/gx-tool.html
+
+# OS files
+.DS_Store
+Thumbs.db

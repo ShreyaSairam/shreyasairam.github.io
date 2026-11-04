@@ -10,7 +10,8 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import roc_auc_score
 
 R = pathlib.Path(__file__).parent; OUT = R / "out"
-df = pd.read_csv("/home/claude/hr_src/EmployeeAttrition/emp_attrition.csv", encoding="utf-8-sig")
+# IBM HR Analytics Employee Attrition data (WA_Fn-UseC_-HR-Employee-Attrition.csv), saved as data/emp_attrition.csv
+df = pd.read_csv(R / "data" / "emp_attrition.csv", encoding="utf-8-sig")
 y = (df.Attrition == "Yes").astype(int)
 NUM = ["Age", "MonthlyIncome", "DistanceFromHome", "JobSatisfaction", "EnvironmentSatisfaction", "WorkLifeBalance",
        "JobInvolvement", "RelationshipSatisfaction", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion",

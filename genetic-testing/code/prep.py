@@ -1,7 +1,9 @@
 """Genetic testing tool: merge duplicate OMIM/Orphanet entries, export compact data, test the matcher on simulated
 patients, and calibrate the confidence label on held out cases."""
-import sys, json, random, numpy as np, pandas as pd
-sys.path.insert(0, "/home/claude/portfolio/genomics_dsst")
+import os, sys, json, random, numpy as np, pandas as pd
+# Uses the matching engine from github.com/ShreyaSairam/portfolio (genomics_dsst folder).
+# Set GENOMICS_DSST to its path, or clone that repo next to this one.
+sys.path.insert(0, os.environ.get("GENOMICS_DSST", os.path.join(os.path.dirname(__file__), "../../../portfolio/genomics_dsst")))
 from engine import load_data, symptom_weights, match_diseases, get_recommendation, overall_recommendation
 terms, ds, dg = load_data()
 # The same condition often appears twice (OMIM and Orphanet), splitting the evidence. Merge by name.

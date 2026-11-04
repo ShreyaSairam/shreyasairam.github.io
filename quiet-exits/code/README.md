@@ -1,4 +1,6 @@
-# Quiet Exits
+# Churn Prediction: code
+
+Two halves: bank customers whose savings quietly drain away (Quiet Exits), and employees likely to leave.
 
 Customers rarely say goodbye. Their balances do.
 
@@ -30,13 +32,36 @@ PKDD'99 Financial Data Set (Petr Berka and Marta Sochorova): real anonymised tra
 ## Run it
 
 ```
-pip install duckdb lightgbm scikit-learn pandas
-# put the fin_*.tsv files in data/
-python stage1_run.py      # Stage 1: SQL build
-python stages2to6.py      # Stages 2 to 6
-python export_model.py    # model for the in-browser what-if
-python build.py           # builds quiet-exits.html
+pip install duckdb lightgbm scikit-learn pandas numpy pyarrow
+# put the fin_*.tsv files in data/ (bank)
+# put the IBM HR attrition CSV in data/emp_attrition.csv (employees)
+
+# Bank customers
+python stage1_run.py      # Stage 1: SQL build into out/bank.duckdb
+python stages2to6.py      # Stages 2 to 6: insight, model, governance, backtest
+python export_model.py    # compact model for the in-browser what-if
+python exit_type_test.py  # tests whether exit type can be predicted
+python prep_tool.py       # data for the customer tool
+python build_tool.py      # -> quiet-exits-tool.html, published as ../index.html
+python build.py           # -> quiet-exits.html, published as ../report.html
+
+# Employees
+python prep_hr.py         # five models compared, live model for the browser
+python build_hr.py        # -> employees-tool.html, published as ../employees.html
+
+# Last step, from the site root
+python quiet-exits/code/add_guide.py .   # adds the short start-here guide to each tool
 ```
+
+| File | Purpose |
+|---|---|
+| `sql/01_build_monthly_view.sql` | Turns raw transactions into account months |
+| `stage1_run.py`, `stages2to6.py` | The six stage pipeline |
+| `export_model.py`, `prep_tool.py`, `prep_final.py` | Model export and tool data (`prep_tool.py` reuses the training code in `prep_final.py`) |
+| `exit_type_test.py` | Hypothesis test on exit type |
+| `prep_hr.py` | Employee models |
+| `*_template.html`, `tool_engine.js` | Page templates and the in-browser scoring engine |
+| `build*.py` | Fill the templates with data |
 
 ## Limits
 
