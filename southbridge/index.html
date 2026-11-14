@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Southbridge: Australian grads meet partners across Asia</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--ink:#0F2A44;--muted:#5A6B7D;--bg:#F4F7FB;--card:#fff;--line:#E1E8F0;--teal:#0E9AA7;--coral:#FF6B5B;--sun:#FFB81C;--mint:#2EC4A0;--violet:#6C5CE7}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Calibri,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{background:var(--ink);color:#fff;padding:24px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.brand{font-weight:800;font-size:22px;padding:0 10px 18px}.brand span{color:var(--sun)}
+.nav-btn{background:none;border:0;color:#BFD0E0;font:inherit;font-weight:600;text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer;display:flex;gap:10px;align-items:center}
+.nav-btn i{font-style:normal;width:22px;text-align:center}
+.nav-btn:hover{background:#18395C;color:#fff}.nav-btn.on{background:var(--teal);color:#fff}
+.side-foot{margin-top:auto;font-size:12px;color:#8FA6BD;padding:10px}
+main{padding:28px 32px;max-width:1200px;width:100%}
+.page{display:none}.page.on{display:block;animation:up .35s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+h1{font-size:30px;font-weight:800}h2{font-size:19px;margin-bottom:12px}
+.sub{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 6px 18px rgba(15,42,68,.05)}
+.grid{display:grid;gap:18px}
+.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1.5fr 1fr}
+.kpi{display:flex;gap:14px;align-items:center}
+.kpi .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:20px;color:#fff}
+.kpi b{font-size:24px;display:block;line-height:1}.kpi small{color:var(--muted)}
+.hero{background:linear-gradient(120deg,var(--ink),#16507A);color:#fff;border:0;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.hero p{color:#CFE3F0;margin-top:4px}
+.ring{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:20px;background:conic-gradient(var(--sun) calc(var(--p)*1%),rgba(255,255,255,.18) 0)}
+.ring span{background:var(--ink);width:78px;height:78px;border-radius:50%;display:grid;place-items:center}
+.btn{background:var(--teal);color:#fff;border:0;font:inherit;font-weight:700;padding:10px 16px;border-radius:12px;cursor:pointer;font-size:14px}
+.btn:hover{filter:brightness(1.05)}.btn.sun{background:var(--sun);color:var(--ink)}.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:#E2F5F7;color:var(--teal)}
+.tag.sun{background:#FFF1CC;color:#8a5b00}.tag.coral{background:#FFE4E0;color:#B4362A}.tag.violet{background:#ECE9FD;color:var(--violet)}
+.list{display:grid;gap:12px}
+.item{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+.muted{color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+input,select,textarea{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+textarea{min-height:88px;resize:vertical}
+label{font-size:13px;font-weight:700;color:var(--muted);display:grid;gap:6px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form .full{grid-column:1/-1}
+.skill{border:1px solid var(--line);background:#F7FAFD;padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer;color:var(--ink)}
+.skill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.toolbar input,.toolbar select{width:auto;min-width:170px}
+#map{height:520px;border-radius:18px;border:1px solid var(--line)}
+.legend{display:flex;gap:16px;margin:10px 0;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.empty{color:var(--muted);font-style:italic}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;transition:transform .3s;z-index:30}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+@media(max-width:980px){body{grid-template-columns:1fr}aside{position:relative;height:auto;flex-direction:row;flex-wrap:wrap}.g4,.g3,.g2,.form{grid-template-columns:1fr}}
+aside{overflow-y:auto}
+@media(max-width:980px){aside{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:center;padding:10px 12px;gap:4px;position:sticky;top:0;z-index:15;height:auto}
+.brand{padding:0 10px 0 4px;font-size:18px;flex:none}.nav-btn{flex:none;white-space:nowrap;padding:8px 10px;font-size:14px}.side-foot{display:none}main{padding:18px 14px}h1{font-size:24px}.grid[style]{grid-template-columns:1fr!important}}
+</style></head>
+<body>
+<aside>
+  <div class="brand">South<span>bridge</span></div>
+  <button class="nav-btn on" data-p="dash"><i>◉</i>Dashboard</button>
+  <button class="nav-btn" data-p="profile"><i>✎</i>My profile</button>
+  <button class="nav-btn" data-p="people"><i>☺</i>Find people</button>
+  <button class="nav-btn" data-p="map"><i>◎</i>Map</button>
+  <button class="nav-btn" data-p="brain"><i>✦</i>Brainstorm</button>
+  <button class="nav-btn" data-p="opps"><i>⌘</i>Opportunities</button>
+  <button class="nav-btn" data-p="practice"><i>◐</i>Practice</button>
+  <button class="nav-btn" data-p="messages"><i>✉</i>Messages</button>
+  <button class="nav-btn" data-p="startups"><i>⚑</i>Startups</button>
+  <button class="nav-btn" data-p="events"><i>▦</i>Events</button>
+  <button class="nav-btn" data-p="committee"><i>★</i>Committee</button>
+  <button class="nav-btn" data-p="partners"><i>◈</i>ACS and EA</button>
+  <button class="nav-btn" data-p="feed"><i>≣</i>Feed</button>
+  <button class="nav-btn" data-p="circles"><i>◍</i>My circles</button>
+  <button class="nav-btn" data-p="cv"><i>✓</i>CV scorer</button>
+  <button class="nav-btn" data-p="employer"><i>▣</i>Employer console</button>
+  <div class="side-foot">Demo build. Sample people are fictional. Data stays in this browser.</div>
+</aside>
+
+<main>
+<!-- DASHBOARD -->
+<section class="page on" id="p-dash">
+  <div class="top"><div><h1 id="greet">Welcome</h1><div class="sub">Here is what is moving in your network today.</div></div>
+    <button class="btn" onclick="show('profile')">Complete profile</button></div>
+  <div class="card hero" style="margin-bottom:18px">
+    <div><h2 style="font-size:24px">Your next step: <span id="next">finish your profile</span></h2>
+      <p>Members with complete profiles get more replies from alumni and business owners.</p>
+      <div style="margin-top:14px"><button class="btn sun" onclick="show('brain')">Share an idea</button>
+      <button class="btn ghost" style="margin-left:8px" onclick="show('people')">Find a mentor</button></div></div>
+    <div class="ring" id="ring" style="--p:0"><span id="ringtxt">0%</span></div>
+  </div>
+  <div class="grid g4" style="margin-bottom:18px">
+    <div class="card kpi"><div class="ic" style="background:var(--teal)">☺</div><div><b id="k-people">0</b><small>Members</small></div></div>
+    <div class="card kpi"><div class="ic" style="background:var(--sun);color:var(--ink)">✦</div><div><b id="k-ideas">0</b><small>Ideas shared</small></div></div>
+    <div class="card kpi"><div class="ic" style="background:var(--coral)">⌘</div><div><b id="k-opps">0</b><small>Open opportunities</small></div></div>
+    <div class="card kpi"><div class="ic" style="background:var(--mint)">◎</div><div><b id="k-countries">0</b><small>Countries</small></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h2>Recommended for you</h2><div class="list" id="rec"></div></div>
+    <div class="card"><h2>Opportunities for you</h2><div class="list" id="dash-opps"></div></div>
+  </div>
+  <div class="card" style="margin-top:18px"><h2>Ideas gaining support</h2><div class="list" id="dash-ideas"></div></div>
+</section>
+
+<!-- PROFILE -->
+<section class="page" id="p-profile">
+  <div class="top"><div><h1>My student profile</h1><div class="sub">This is how alumni and partners see you.</div></div>
+    <button class="btn" onclick="saveProfile()">Save profile</button></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="form">
+        <label>Full name<input id="p-name"></label>
+        <label>Committee role<select id="pf-comrole"><option value="">None</option><option>President</option><option>Secretary</option><option>Events lead</option><option>Group moderator</option></select></label>
+        <label>I am a<select id="p-kind"><option>Student</option><option>Alumni</option><option>Company or recruiter</option></select></label>
+        <label>Preferred name<input id="p-pref"></label>
+        <label>University<input id="p-uni" value="University of Melbourne"></label>
+        <label>Degree<input id="p-degree" placeholder="e.g. Master of Information Systems"></label>
+        <label>Year of study<select id="p-year"><option>Undergraduate year 1</option><option>Undergraduate year 2</option><option>Undergraduate year 3</option><option>Honours or final year</option><option>Masters</option><option>PhD</option><option>Recent graduate</option></select></label>
+        <label>Main field<select id="p-field"><option>Aerospace</option><option>Business</option><option>Health</option><option>Tech</option><option>Design</option><option>Other</option></select></label>
+        <label>Home country<select id="p-country"><option>Australia</option><option>Singapore</option><option>Malaysia</option><option>Indonesia</option><option>Thailand</option><option>Vietnam</option><option>Philippines</option><option>India</option><option>Japan</option><option>South Korea</option><option>China</option><option>New Zealand</option></select></label>
+        <label>Where you are now<input id="p-city" placeholder="e.g. Melbourne"></label>
+        <label>Looking for<select id="p-goal"><option>Graduate role</option><option>Internship</option><option>Mentor</option><option>Startup partner</option><option>Business idea feedback</option></select></label>
+        <label class="full">Skills (choose up to 8)<div class="chips" id="skills"></div></label>
+        <label class="full">About me<textarea id="p-bio" placeholder="What you study, what you have built, and what you want to explore."></textarea></label>
+        <label>LinkedIn<input id="p-link" placeholder="linkedin.com/in/yourname"></label>
+        <label>Availability<select id="p-avail"><option>Open to coffee chats</option><option>Available for part time work</option><option>Looking for full time roles</option><option>Not available right now</option></select></label>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="preview" style="text-align:left"></div>
+      <div class="card" style="margin-top:18px"><h2>Profile strength</h2><div class="sub" id="tips"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PEOPLE -->
+<section class="page" id="p-people">
+  <div class="top"><div><h1>Find people</h1><div class="sub">Alumni, small business owners and founders across Australia and Asia.</div></div></div>
+  <div class="toolbar">
+    <input id="q" placeholder="Search name, role or skill">
+    <select id="f-field"><option value="">All fields</option></select>
+    <select id="f-country"><option value="">All countries</option></select>
+    <select id="f-type"><option value="">All types</option><option>Alumni</option><option>Small business owner</option><option>Startup founder</option></select>
+  </div>
+  <div class="grid g3" id="people"></div>
+</section>
+
+<!-- MAP -->
+<section class="page" id="p-map">
+  <div class="top"><div><h1>Map</h1><div class="sub">Where members are based.</div></div></div>
+  <div class="legend">
+    <span><i class="dot" style="background:#0F2A44"></i>Alumni</span>
+    <span><i class="dot" style="background:#FFB81C"></i>Small business owners</span>
+    <span><i class="dot" style="background:#FF6B5B"></i>Startup founders</span>
+  </div>
+  <div id="map"></div>
+</section>
+
+<!-- BRAINSTORM -->
+<section class="page" id="p-brain">
+  <div class="top"><div><h1>Brainstorm</h1><div class="sub">Share a rough idea. Others can say they would help.</div></div></div>
+  <div class="grid g2">
+    <div class="card"><h2>Share an idea</h2>
+      <div class="list" style="gap:12px">
+        <label>Idea title<input id="i-title" placeholder="e.g. Drone inspection for small wind farms"></label>
+        <label>Field<select id="i-field"><option>Aerospace</option><option>Business</option><option>Health</option><option>Tech</option><option>Design</option><option>Other</option></select></label>
+        <label>What is it?<textarea id="i-desc" placeholder="The problem, your idea, and who it helps."></textarea></label>
+        <div><button class="btn" onclick="postIdea()">Share idea</button></div>
+      </div></div>
+    <div class="card"><h2>Ideas from the community</h2><div class="list" id="ideas"></div></div>
+  </div>
+</section>
+
+<!-- OPPORTUNITIES -->
+<section class="page" id="p-opps">
+  <div class="top"><div><h1>Opportunities</h1><div class="sub">Roles, programs and projects. Save the ones you want to follow.</div></div></div>
+  <div class="toolbar"><select id="o-country"><option value="">All countries</option></select>
+    <select id="o-kind"><option value="">All types</option><option>Graduate role</option><option>Internship</option><option>Project</option><option>Mentoring</option><option>Program</option></select></div>
+  <div class="grid g3" id="opps"></div>
+</section>
+
+<!-- PRACTICE: entry-level job simulator -->
+<section class="page" id="p-practice">
+  <div class="top"><div><h1>Practice: job simulator</h1><div class="sub">Pick an entry-level role and answer a manager's questions. Get a score and specific feedback after each answer.</div></div></div>
+  <div class="grid g2">
+    <div class="card">
+      <h2>Choose a role</h2>
+      <div class="list" id="sim-roles"></div>
+    </div>
+    <div class="card" id="sim-main">
+      <p class="empty">Choose a role to start a simulation.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:18px"><h2>Your practice history</h2><div class="list" id="sim-history"><p class="empty">No attempts yet.</p></div></div>
+  <p class="muted" style="margin-top:12px;font-size:13px">Simulated interviewer: scripted questions with rule-based scoring. It runs in your browser with no AI service, so it does not understand free-form answers the way a live AI model would.</p>
+</section>
+
+
+<!-- MESSAGES -->
+<section class="page" id="p-messages">
+  <div class="top"><div><h1>Messages</h1><div class="sub">Talk directly with students you have connected with.</div></div></div>
+  <div class="grid g2" style="grid-template-columns:280px 1fr">
+    <div class="card"><h2>Chats</h2><div class="list" id="msg-list"></div></div>
+    <div class="card" id="msg-thread"><p class="empty">Pick a chat to start.</p></div>
+  </div>
+</section>
+
+<!-- STARTUPS -->
+<section class="page" id="p-startups">
+  <div class="top"><div><h1>Startups</h1><div class="sub">Student startup groups. Share an idea, find co-founders, post progress.</div></div></div>
+  <div class="card" style="margin-bottom:18px"><h2>Start a group</h2>
+    <div class="form"><label>Group name<input id="sg-name" placeholder="e.g. Campus Bike Share"></label>
+      <label>Looking for<input id="sg-look" placeholder="e.g. Designer, developer"></label>
+      <label class="full">The idea<textarea id="sg-idea" placeholder="The problem, who it helps, and where you are now."></textarea></label>
+      <div class="full"><button class="btn" onclick="createGroup()">Create group</button></div></div></div>
+  <div class="grid g2" id="group-list"></div>
+  <div id="group-detail" style="margin-top:18px"></div>
+</section>
+
+<!-- EVENTS -->
+<section class="page" id="p-events">
+  <div class="top"><div><h1>Events</h1><div class="sub">Upcoming student events. New events are reviewed by the committee before they appear.</div></div></div>
+  <div class="grid g2">
+    <div><h2>Upcoming</h2><div class="list" id="event-list"></div></div>
+    <div class="card"><h2>Create an event</h2>
+      <div class="list" style="gap:12px">
+        <label>Title<input id="ev-title" placeholder="e.g. Pitch night"></label>
+        <label>Date and time<input id="ev-date" type="datetime-local"></label>
+        <label>Place<input id="ev-place" placeholder="e.g. Careers Centre, Level 3"></label>
+        <label>Details<textarea id="ev-desc" placeholder="What happens at this event?"></textarea></label>
+        <div><button class="btn" onclick="createEvent()">Submit for approval</button></div>
+      </div></div>
+  </div>
+</section>
+
+<!-- COMMITTEE -->
+<section class="page" id="p-committee">
+  <div id="com-blocked" class="card" style="display:none;text-align:center;padding:48px 24px;max-width:620px;margin:20px auto">
+    <div style="font-size:48px">🔒</div>
+    <h1 style="margin-top:10px">Student committee</h1>
+    <p class="sub" style="margin:8px 0 22px">This console is for student committee members. Set your committee role on your profile to unlock it.</p>
+    <button class="btn" onclick="show('profile')">Go to my profile</button>
+  </div>
+  <div id="com-open">
+    <div class="top"><div><h1>Committee console</h1><div class="sub" id="com-role"></div></div></div>
+    <div class="grid g2">
+      <div class="card"><h2>Pending posts</h2><div class="list" id="com-posts"></div></div>
+      <div class="card"><h2>Pending events</h2><div class="list" id="com-events"></div></div>
+    </div>
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card"><h2>Manage groups</h2><div class="list" id="com-groups"></div></div>
+      <div class="card"><h2>Run events</h2><div class="list" id="com-run"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PARTNERS -->
+<section class="page" id="p-partners">
+  <div class="top"><div><h1>ACS and Engineers Australia</h1><div class="sub">Professional bodies. Space for their events, resources and member content.</div></div></div>
+  <div class="card" style="margin-bottom:18px;background:#FFF8E1;border-color:#FFD98A"><b>Placeholder content.</b> Nothing on this page is published by ACS or Engineers Australia, and neither organisation endorses this site. Replace these sections only after you have written agreement from each organisation.</div>
+  <div class="grid g2">
+    <div class="card"><h2>ACS</h2><p class="muted">Placeholder: ACS is a professional body for ICT and technology professionals.</p>
+      <h3 style="margin-top:14px">Events</h3><div class="list"><div class="item">Placeholder event, date to be confirmed</div></div>
+      <h3 style="margin-top:14px">Resources</h3><div class="list"><div class="item">Placeholder resource, e.g. membership guide</div></div>
+      <h3 style="margin-top:14px">Member content</h3><div class="list"><div class="item">Placeholder member article</div></div></div>
+    <div class="card"><h2>Engineers Australia</h2><p class="muted">Placeholder: Engineers Australia is the professional body for engineers in Australia.</p>
+      <h3 style="margin-top:14px">Events</h3><div class="list"><div class="item">Placeholder event, date to be confirmed</div></div>
+      <h3 style="margin-top:14px">Resources</h3><div class="list"><div class="item">Placeholder resource, e.g. graduate pathway guide</div></div>
+      <h3 style="margin-top:14px">Member content</h3><div class="list"><div class="item">Placeholder member article</div></div></div>
+  </div>
+</section>
+<!-- FEED -->
+<section class="page" id="p-feed">
+  <div class="top"><div><h1>Feed</h1><div class="sub">Posts from students, alumni, recruiters and businesses.</div></div></div>
+  <div class="grid g2">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <label>Share an update<textarea id="f-text" placeholder="What are you building, learning or looking for?"></textarea></label>
+        <div class="toolbar" style="margin:12px 0 0"><select id="f-aud" style="width:auto"><option>Public</option><option>Australian students only</option><option>Recruiters and companies only</option><option>My circle only</option></select>
+        <button class="btn" onclick="postFeed()">Post</button></div>
+      </div>
+      <div class="toolbar"><button class="skill on" data-ft="all">All</button><button class="skill" data-ft="Public">Public</button><button class="skill" data-ft="Australian students only">Australian students</button><button class="skill" data-ft="Recruiters and companies only">Recruiters</button><button class="skill" data-ft="My circle only">My circle</button></div>
+      <div class="list" id="feed"></div>
+    </div>
+    <div class="card"><h2>Who to follow</h2><div class="list" id="follow"></div></div>
+  </div>
+</section>
+
+<!-- CIRCLES -->
+<section class="page" id="p-circles">
+  <div class="top"><div><h1>My circles</h1><div class="sub">Close contacts, your network, and groups you belong to.</div></div></div>
+  <div class="grid g3" style="margin-bottom:18px" id="tiers"></div>
+  <div class="grid g2">
+    <div class="card"><h2>Requests</h2><div class="list" id="reqs"></div></div>
+    <div class="card"><h2>Groups</h2><div class="list" id="groups"></div></div>
+  </div>
+</section>
+
+<!-- CV SCORER -->
+<section class="page" id="p-cv">
+  <div class="top"><div><h1>CV scorer</h1><div class="sub">Paste your CV text. Get a score and specific fixes.</div></div></div>
+  <div class="grid g2">
+    <div class="card"><label>Paste your CV text<textarea id="cv-text" style="min-height:340px" placeholder="Paste your CV here. Plain text works best."></textarea></label>
+      <div style="margin-top:12px"><button class="btn sun" onclick="scoreCv()">Score my CV</button></div></div>
+    <div class="card"><div id="cv-out"><p class="empty">Your score and tips will appear here.</p></div></div>
+  </div>
+</section>
+
+<!-- EMPLOYER CONSOLE -->
+<section class="page" id="p-employer">
+  <div id="emp-blocked" class="card" style="display:none;text-align:center;padding:48px 24px;max-width:620px;margin:20px auto">
+    <div style="font-size:48px">🔒</div>
+    <h1 style="margin-top:10px">Employer console</h1>
+    <p class="sub" style="margin:8px 0 22px">This area is for company and recruiter accounts. Student accounts can apply for roles, but can't post roles or see other applicants.</p>
+    <button class="btn" onclick="show('opps')">Browse opportunities</button>
+  </div>
+  <div id="emp-open">
+  <div class="top"><div><h1>Employer console</h1><div class="sub">Post roles, review applicants and move them through your process.</div></div></div>
+  <div class="grid g2">
+    <div class="card"><h2>Post a role</h2><div class="list" style="gap:12px">
+      <label>Role title<input id="j-title" placeholder="e.g. Graduate data analyst"></label>
+      <label>Company<input id="j-org" placeholder="Your company"></label>
+      <label>Field<select id="j-field"><option>Aerospace</option><option>Business</option><option>Health</option><option>Tech</option><option>Design</option><option>Other</option></select></label>
+      <label>Country<select id="j-country"><option>Australia</option><option>Singapore</option><option>Malaysia</option><option>Indonesia</option><option>Thailand</option><option>Vietnam</option><option>Philippines</option><option>India</option><option>Japan</option><option>South Korea</option><option>China</option><option>New Zealand</option></select></label>
+      <label>Type<select id="j-kind"><option>Graduate role</option><option>Internship</option><option>Project</option><option>Mentoring</option></select></label>
+      <label>Description<textarea id="j-desc" placeholder="What the role involves and what you are looking for."></textarea></label>
+      <div><button class="btn" onclick="postJob()">Publish role</button></div></div></div>
+    <div class="card"><h2>Your roles and applicants</h2><div class="list" id="jobs"></div></div>
+  </div>
+</div></section>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='southbridge-v1';
+const SKILLS=['Python','SQL','Data analysis','Excel','Project management','Writing','Public speaking','UX research','Prototyping','Cloud','Finance','Marketing','Sales','Systems engineering','CAD','Leadership'];
+const SAMPLE=[
+ {name:'Amara Okafor',role:'Aerospace engineer',field:'Aerospace',country:'Australia',type:'Alumni',city:'Melbourne',lat:-37.81,lng:144.96,bio:'Works on satellite systems. Happy to talk about getting into space tech.',skills:['Systems engineering','CAD','Leadership']},
+ {name:'Ravi Menon',role:'Owner, cafe chain',field:'Business',country:'Singapore',type:'Small business owner',city:'Singapore',lat:1.35,lng:103.82,bio:'Runs three cafes and needs help with digital marketing ideas.',skills:['Marketing','Sales','Excel']},
+ {name:'Mei Lin Tan',role:'Founder, health app',field:'Health',country:'Malaysia',type:'Startup founder',city:'Kuala Lumpur',lat:3.14,lng:101.69,bio:'Building a patient follow up app. Looking for partners in Australia.',skills:['Project management','Python','Public speaking']},
+ {name:'Daniel Hart',role:'Product designer',field:'Design',country:'New Zealand',type:'Alumni',city:'Auckland',lat:-36.85,lng:174.76,bio:'Mentors students on user research and prototyping.',skills:['UX research','Prototyping','Writing']},
+ {name:'Yuki Sato',role:'Owner, print studio',field:'Design',country:'Japan',type:'Small business owner',city:'Tokyo',lat:35.68,lng:139.69,bio:'Small studio open to student projects and internships.',skills:['Marketing','Prototyping']},
+ {name:'Priya Nair',role:'Data lead, logistics startup',field:'Tech',country:'India',type:'Startup founder',city:'Chennai',lat:13.08,lng:80.27,bio:'Interested in supply chain tools and partnerships with Australian firms.',skills:['Python','SQL','Data analysis','Cloud']},
+ {name:'Jordan Lee',role:'Finance analyst',field:'Business',country:'Australia',type:'Alumni',city:'Sydney',lat:-33.87,lng:151.21,bio:'Happy to share how the graduate finance path works.',skills:['Finance','Excel','Data analysis']},
+ {name:'Nguyen Anh',role:'Founder, edtech',field:'Tech',country:'Vietnam',type:'Startup founder',city:'Ho Chi Minh City',lat:10.82,lng:106.63,bio:'Building learning tools. Looking for mentors in product management.',skills:['Prototyping','Project management','Writing']}
+];
+const OPPS=[
+ {title:'Graduate program: Systems engineering',org:'Aerospace firm (sample)',country:'Australia',kind:'Graduate role',field:'Aerospace'},
+ {title:'Marketing internship for a cafe group',org:'Small business (sample)',country:'Singapore',kind:'Internship',field:'Business'},
+ {title:'Student product sprint',org:'Startup (sample)',country:'Vietnam',kind:'Project',field:'Tech'},
+ {title:'Data analyst, logistics',org:'Startup (sample)',country:'India',kind:'Graduate role',field:'Tech'},
+ {title:'Design mentoring circle',org:'Alumni group (sample)',country:'New Zealand',kind:'Mentoring',field:'Design'},
+ {title:'Cross-border business exchange',org:'Chamber partner (sample)',country:'Japan',kind:'Program',field:'Business'}
+];
+const COORD={Australia:[-33.87,151.21],Singapore:[1.35,103.82],Malaysia:[3.14,101.69],Indonesia:[-6.2,106.85],Thailand:[13.75,100.5],Vietnam:[10.82,106.63],Philippines:[14.6,120.98],India:[13.08,80.27],Japan:[35.68,139.69],'South Korea':[37.57,126.98],China:[31.23,121.47],'New Zealand':[-36.85,174.76]};
+const COL={Alumni:'#0F2A44','Small business owner':'#FFB81C','Startup founder':'#FF6B5B'};
+const AVC=['#0E9AA7','#FF6B5B','#FFB81C','#6C5CE7','#2EC4A0','#0F2A44'];
+const store=Object.assign({practice:[],profile:null,members:[],ideas:[],saved:[],posts:[],conns:{},joined:[],jobs:[],apps:[],cvScore:null},JSON.parse(localStorage.getItem(KEY)||'{}'));
+const save=()=>localStorage.setItem(KEY,JSON.stringify(store));
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const initials=n=>n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
+const avc=n=>AVC[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%AVC.length];
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>t.classList.remove('show'),2300);}
+function show(p){document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  if(p==='map')setTimeout(()=>map.invalidateSize(),60);window.scrollTo(0,0);}
+document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>show(b.dataset.p));
+const all=()=>[...SAMPLE,...store.members];
+
+/* ---------- profile ---------- */
+let chosen=new Set(store.profile?.skills||[]);
+$('skills').innerHTML=SKILLS.map(s=>`<button class="skill" data-s="${s}">${s}</button>`).join('');
+$('skills').onclick=e=>{const b=e.target.closest('.skill');if(!b)return;const s=b.dataset.s;
+  if(chosen.has(s))chosen.delete(s);else if(chosen.size<8)chosen.add(s);else{toast('Choose up to 8 skills');return;}
+  paintSkills();renderPreview();};
+function paintSkills(){document.querySelectorAll('.skill').forEach(b=>b.classList.toggle('on',chosen.has(b.dataset.s)));}
+const PF=['pf-comrole','p-kind','p-name','p-pref','p-uni','p-degree','p-year','p-field','p-country','p-city','p-goal','p-bio','p-link','p-avail'];
+PF.forEach(id=>$(id).addEventListener('input',renderPreview));
+function readProfile(){return{committee:$('pf-comrole').value,kind:$('p-kind').value,name:$('p-name').value.trim(),pref:$('p-pref').value.trim(),uni:$('p-uni').value.trim(),degree:$('p-degree').value.trim(),year:$('p-year').value,field:$('p-field').value,country:$('p-country').value,city:$('p-city').value.trim(),goal:$('p-goal').value,bio:$('p-bio').value.trim(),link:$('p-link').value.trim(),avail:$('p-avail').value,skills:[...chosen]};}
+function strength(p){const checks=[p.name,p.degree,p.city,p.bio,p.link,p.skills.length>=3,p.skills.length>=5];return Math.round(checks.filter(Boolean).length/checks.length*100);}
+function renderPreview(){const p=readProfile();const s=strength(p);
+  $('preview').innerHTML=`<div style="display:flex;gap:14px;align-items:center">
+    <div class="av" style="width:64px;height:64px;font-size:22px;background:${avc(p.name||'Student')}">${esc(initials(p.name||'ST'))}</div>
+    <div><div style="font-size:20px;font-weight:800">${esc(p.name||'Your name')}</div>
+    <div class="muted">${esc(p.degree||'Your degree')} · ${esc(p.uni)}</div>
+    <div class="muted">${esc(p.year)} · ${esc(p.field)}</div></div></div>
+    <p style="margin:14px 0">${esc(p.bio||'Add a short bio so people know how to help you.')}</p>
+    <div class="chips" style="margin-bottom:12px">${p.skills.map(s=>`<span class="tag violet">${esc(s)}</span>`).join('')||'<span class="muted">No skills yet</span>'}</div>
+    <div class="muted">Based in ${esc(p.city||'add your city')}, ${esc(p.country)} · Looking for: <b>${esc(p.goal)}</b></div>
+    <div class="muted" style="margin-top:6px">${esc(p.avail)}${p.link?' · '+esc(p.link):''}</div>`;
+  $('tips').innerHTML=`Strength: <b>${s}%</b><div style="height:10px;background:#EEF3F8;border-radius:99px;margin:8px 0"><div style="height:10px;width:${s}%;background:var(--teal);border-radius:99px"></div></div>
+    <div class="muted">${[!p.name&&'Add your name',!p.degree&&'Add your degree',!p.city&&'Add your city',!p.bio&&'Write a short bio',!p.link&&'Add a LinkedIn link',p.skills.length<5&&'Choose at least 5 skills'].filter(Boolean).join(' · ')||'Your profile looks great.'}</div>`;
+  return s;}
+function loadProfile(){const p=store.profile;if(!p)return;$('p-kind').value=p.kind||'Student';$('pf-comrole').value=p.committee||'';
+  $('p-name').value=p.name;$('p-pref').value=p.pref||'';$('p-uni').value=p.uni;$('p-degree').value=p.degree;$('p-year').value=p.year;$('p-field').value=p.field;$('p-country').value=p.country;$('p-city').value=p.city;$('p-goal').value=p.goal;$('p-bio').value=p.bio;$('p-link').value=p.link;$('p-avail').value=p.avail;chosen=new Set(p.skills);paintSkills();}
+function saveProfile(){const p=readProfile();if(!p.name){toast('Add your name first');return;}
+  store.profile=p;save();employerGate();committeeGate();renderPreview();renderDash();renderPeople();renderMap();renderFilters();toast('Profile saved');}
+window.saveProfile=saveProfile;
+
+/* ---------- dashboard ---------- */
+function renderDash(){const p=store.profile;
+  $('greet').textContent=p?`Hi ${p.pref||p.name.split(' ')[0]}, welcome back`:'Welcome to Southbridge';
+  const s=p?strength(p):0;
+  $('ring').style.setProperty('--p',s);$('ringtxt').textContent=s+'%';
+  $('next').textContent=!p?'create your student profile':s<100?'finish your profile to '+Math.max(1,Math.round((100-s)/10))+' quick steps':'share an idea with the community';
+  $('k-people').textContent=all().length;$('k-ideas').textContent=store.ideas.length;$('k-opps').textContent=OPPS.length;
+  $('k-countries').textContent=new Set(all().map(m=>m.country)).size;
+  const mine=p?p.field:null;
+  const rec=all().filter(m=>!mine||m.field===mine||(p&&m.skills&&m.skills.some(x=>p.skills.includes(x)))).slice(0,4);
+  $('rec').innerHTML=rec.map(m=>personRow(m)).join('')||'<p class="empty">Create a profile to see matches.</p>';
+  const oppsFor=OPPS.filter(o=>!mine||o.field===mine).slice(0,4);
+  $('dash-opps').innerHTML=oppsFor.map(o=>`<div class="item"><div><b>${esc(o.title)}</b><div class="muted">${esc(o.country)} · ${esc(o.kind)}</div></div><button class="btn ghost" onclick="saveOpp('${esc(o.title)}')">Save</button></div>`).join('')||'<p class="empty">No matches yet.</p>';
+  const top=[...store.ideas].sort((a,b)=>b.votes-a.votes).slice(0,4);
+  $('dash-ideas').innerHTML=top.map(x=>`<div class="item"><div><b>${esc(x.title)}</b><div class="muted">${esc(x.field)} · ${x.votes} would help</div></div><button class="btn" onclick="vote(${x.id})">I would help</button></div>`).join('')||'<p class="empty">No ideas yet. Share the first one.</p>';
+}
+function personRow(m){return`<div class="item"><div style="display:flex;gap:12px;align-items:center"><div class="av" style="background:${avc(m.name)}">${esc(initials(m.name))}</div>
+  <div><b>${esc(m.name)}</b><div class="muted">${esc(m.role)} · ${esc(m.city)}</div></div></div>
+  <span class="tag" style="background:${COL[m.type]}1A;color:${COL[m.type]}">${esc(m.type.split(' ')[0])}</span></div>`;}
+window.saveOpp=t=>{if(!store.saved.includes(t))store.saved.push(t);save();toast('Saved to your list');};
+window.vote=id=>{const x=store.ideas.find(i=>i.id===id);if(x){x.votes++;save();renderIdeas();renderDash();}};
+
+/* ---------- people ---------- */
+function renderFilters(){const f=$('f-field'),c=$('f-country'),oc=$('o-country');
+  const fields=[...new Set(all().map(m=>m.field))].sort();const cs=[...new Set(all().map(m=>m.country))].sort();
+  const fv=f.value,cv=c.value,ov=oc.value;
+  f.innerHTML='<option value="">All fields</option>'+fields.map(x=>`<option>${esc(x)}</option>`).join('');
+  c.innerHTML='<option value="">All countries</option>'+cs.map(x=>`<option>${esc(x)}</option>`).join('');
+  oc.innerHTML='<option value="">All countries</option>'+[...new Set(OPPS.map(o=>o.country))].sort().map(x=>`<option>${esc(x)}</option>`).join('');
+  f.value=fv;c.value=cv;oc.value=ov;}
+function renderPeople(){const q=$('q').value.toLowerCase(),f=$('f-field').value,c=$('f-country').value,t=$('f-type').value;
+  const list=all().filter(m=>(!q||(m.name+m.role+m.field+m.bio+(m.skills||[]).join(' ')).toLowerCase().includes(q))&&(!f||m.field===f)&&(!c||m.country===c)&&(!t||m.type===t));
+  $('people').innerHTML=list.map(m=>`<div class="card" style="display:grid;gap:8px">
+    <div style="display:flex;gap:12px;align-items:center"><div class="av" style="background:${avc(m.name)}">${esc(initials(m.name))}</div>
+    <div><b>${esc(m.name)}</b><div class="muted">${esc(m.role)}</div></div></div>
+    <span class="tag" style="width:max-content;background:${COL[m.type]}1A;color:${COL[m.type]}">${esc(m.type)}</span>
+    <div class="muted">${esc(m.city)}, ${esc(m.country)} · ${esc(m.field)}</div>
+    <p style="font-size:14px">${esc(m.bio)}</p>
+    <div class="chips">${(m.skills||[]).map(s=>`<span class="tag violet">${esc(s)}</span>`).join('')}</div>
+    <div><button class="btn" onclick="toast('Chat request sent to ${esc(m.name)} (demo)')">Request a chat</button></div></div>`).join('')||'<p class="empty">No matches. Try another filter.</p>';}
+['q','f-field','f-country','f-type'].forEach(id=>$(id).addEventListener('input',renderPeople));
+
+/* ---------- map ---------- */
+if(typeof L==='undefined'){window.L={map(){return{setView(){return this},invalidateSize(){},eachLayer(){}}},tileLayer(){return{addTo(){}}},circleMarker(){return{bindPopup(){return{addTo(){}}},addTo(){}}},CircleMarker:function(){}};}
+const map=L.map('map').setView([-8,128],3);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:7}).addTo(map);
+function renderMap(){map.eachLayer(l=>{if(l instanceof L.CircleMarker)map.removeLayer(l);});
+  all().forEach(m=>L.circleMarker([m.lat,m.lng],{radius:9,color:'#fff',weight:3,fillColor:COL[m.type],fillOpacity:1})
+    .bindPopup(`<b>${esc(m.name)}</b><br>${esc(m.role)}<br>${esc(m.city)}, ${esc(m.country)}`).addTo(map));}
+
+/* ---------- ideas ---------- */
+function renderIdeas(){const list=[...store.ideas].sort((a,b)=>b.votes-a.votes);
+  $('ideas').innerHTML=list.map(x=>`<div class="item" style="align-items:flex-start"><div><b>${esc(x.title)}</b><div class="muted">${esc(x.field)} · ${x.votes} would help</div><p style="font-size:14px;margin-top:4px">${esc(x.desc)}</p></div>
+    <button class="btn" onclick="vote(${x.id})">I would help</button></div>`).join('')||'<p class="empty">No ideas yet. Be the first to share one.</p>';}
+window.postIdea=()=>{const t=$('i-title').value.trim(),d=$('i-desc').value.trim();if(!t||!d){toast('Add a title and a description');return;}
+  store.ideas.push({id:Date.now(),title:t,desc:d,field:$('i-field').value,votes:0,by:store.profile?.name||'A student'});save();
+  $('i-title').value='';$('i-desc').value='';renderIdeas();renderDash();toast('Idea shared');};
+
+/* ---------- opportunities ---------- */
+function renderOpps(){const c=$('o-country').value,k=$('o-kind').value;
+  const list=OPPS.filter(o=>(!c||o.country===c)&&(!k||o.kind===k));
+  $('opps').innerHTML=list.map(o=>`<div class="card" style="display:grid;gap:8px"><span class="tag sun" style="width:max-content">${esc(o.kind)}</span>
+    <b style="font-size:16px">${esc(o.title)}</b><div class="muted">${esc(o.org)} · ${esc(o.country)}</div>
+    <div><button class="btn ghost" onclick="saveOpp('${esc(o.title)}')">${store.saved.includes(o.title)?'Saved':'Save'}</button> <button class="btn" onclick="applyOpp('${esc(o.title)}')">${store.apps.some(a=>a.job===o.title&&a.who===(store.profile?.name||'You'))?'Applied':'Apply'}</button></div></div>`).join('')||'<p class="empty">No opportunities match these filters.</p>';}
+$('o-country').onchange=renderOpps;$('o-kind').onchange=renderOpps;
+
+/* ---------- start ---------- */
+loadProfile();renderFilters();renderPreview();renderPeople();renderMap();renderIdeas();renderDash();renderOpps();
+if(!store.profile){setTimeout(()=>toast('Start by creating your student profile'),600);}
+
+/* ================= NEW: feed, circles, CV scorer, employer console ================= */
+const EMPLOYERS=[
+ {name:'Harbour Aero (sample)',role:'Recruiter, aerospace',field:'Aerospace',country:'Australia',type:'Recruiter',city:'Adelaide',lat:-34.93,lng:138.6,bio:'Hiring graduate engineers for satellite and defence programs.',skills:['Systems engineering','CAD']},
+ {name:'Lotus Works (sample)',role:'Talent lead, company',field:'Business',country:'Singapore',type:'Recruiter',city:'Singapore',lat:1.29,lng:103.85,bio:'Looking for graduates in operations and marketing across Asia.',skills:['Marketing','Finance']}
+];
+const STUDENTS_AU=[
+ {name:'Chloe Wright',role:'Master of Engineering, Melbourne',field:'Aerospace',country:'Australia',type:'Alumni',city:'Melbourne',lat:-37.8,lng:145,bio:'Looking for a satellite systems role in Melbourne. Happy to chat.',skills:['CAD','Python']},
+ {name:'Arjun Shah',role:'Final year commerce, Sydney',field:'Business',country:'Australia',type:'Alumni',city:'Sydney',lat:-33.9,lng:151.2,bio:'Interested in small business growth and cross border trade.',skills:['Finance','Excel']}
+];
+const CIRCLES=[{name:'Aerospace students, Australia',members:'Students in Australia'},{name:'Melbourne alumni',members:'Alumni'},{name:'Asia business owners',members:'Small business owners'}];
+const ACTION=['led','built','designed','developed','managed','created','improved','launched','analysed','analyzed','delivered','implemented','reduced','increased','coordinated','researched','wrote','taught','organised','organized'];
+function allPeople(){return [...all(),...EMPLOYERS,...STUDENTS_AU];}
+function me(){return store.profile?store.profile.name:'You';}
+function connTier(n){return store.conns[n]||null;}
+
+/* feed */
+let feedFilter='all';
+document.addEventListener('click',e=>{const b=e.target.closest('[data-ft]');if(!b)return;feedFilter=b.dataset.ft;document.querySelectorAll('[data-ft]').forEach(x=>x.classList.toggle('on',x===b));renderFeed();});
+window.postFeed=()=>{const txt=$('f-text').value.trim();if(!txt){toast('Write something first');return;}
+  store.posts.unshift({id:Date.now(),approved:false,author:me(),role:store.profile?store.profile.degree||store.profile.field:'Member',aud:$('f-aud').value,text:txt,likes:0,liked:false,comments:[]});
+  save();$('f-text').value='';renderFeed();toast('Posted');};
+window.likePost=id=>{const p=store.posts.find(x=>x.id===id);if(!p)return;p.liked=!p.liked;p.likes+=p.liked?1:-1;save();renderFeed();};
+window.commentPost=id=>{const p=store.posts.find(x=>x.id===id);const c=prompt('Write a comment');if(!p||!c)return;p.comments.push({who:me(),text:c});save();renderFeed();};
+window.connect=n=>{if(!store.conns[n]){store.conns[n]='Network';save();toast('Connected to '+n);renderAll();}};
+window.setTier=(n,tier)=>{store.conns[n]=tier;save();renderAll();};
+function renderFeed(){
+  const seed=[
+   {id:-1,author:'Yarra University (sample)',role:'Sample university page',kind:'org',aud:'Public',text:'Graduate scholarship applications for next year are open. Details and eligibility are on our website.',tag:'Scholarship',likes:284,liked:false,comments:[{who:'Chloe Wright',text:'Applied last week, fingers crossed!'}]},
+   {id:-2,author:'Harbour Aero (sample)',role:'Sample company · Aerospace · Adelaide',kind:'org',aud:'Public',text:'We are hiring graduate systems engineers for our satellite programme. Three roles, two start dates in February. Build hardware you can see in orbit.',tag:'We are hiring',likes:173,liked:false,comments:[]},
+   {id:-3,author:'Lotus Works (sample)',role:'Sample company · Singapore',kind:'org',aud:'Public',text:'Our Singapore marketing team is hosting a 30-minute Q&A for students in Australia this Thursday. Bring your questions about careers in cross-border marketing.',tag:'Event',likes:96,liked:false,comments:[]},
+   {id:-4,author:'Chloe Wright',role:'Master of Engineering · University of Melbourne',kind:'student',aud:'Australian students only',text:'Finished my first CubeSat ground test this week. Took three attempts and a lot of coffee, but the telemetry finally came through. Thank you to my team and to Amara for the advice.',tag:'Achievement',likes:58,liked:false,comments:[{who:'Amara Okafor',text:'So proud of you. The third attempt is always the charm!'}]},
+   {id:-5,author:'Ravi Menon',role:'Owner, cafe chain · Singapore',kind:'member',aud:'Public',text:'Looking for ideas on how to grow our loyalty app for three cafes. If you are a student with a marketing idea, share it in Brainstorm and I will read every one.',tag:'Question',likes:41,liked:false,comments:[]},
+   {id:-6,author:'Arjun Shah',role:'Final year commerce · University of Sydney',kind:'student',aud:'Australian students only',text:'Wrote up what I learned from my first three cold emails to small business owners. Reply rates were low until I mentioned a specific problem they had. Short article in the comments.',tag:'Article',likes:77,liked:false,comments:[]},
+   {id:-7,author:'Harbour City University Careers (sample)',role:'Sample university page',kind:'org',aud:'Australian students only',text:'Free resume clinic this Friday, 10am to 2pm, Level 3 of the Careers Centre. Book a 15-minute slot and bring your CV.',tag:'Event',likes:132,liked:false,comments:[]}
+  ];
+  const list=[...store.posts.filter(p=>p.approved!==false||p.author===me()).map(p=>Object.assign({kind:'member',tag:''},p)),...seed].filter(p=>feedFilter==='all'||p.aud===feedFilter);
+  $('feed').innerHTML=list.map(p=>`<div class="card" style="display:grid;gap:8px">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div style="display:flex;gap:10px;align-items:center"><div class="av" style="background:${avc(p.author)}">${esc(initials(p.author))}</div><div><b>${esc(p.author)}</b><div class="muted">${esc(p.role)}</div><div class="muted" style="font-size:12px">${esc(p.aud)}</div></div></div>
+    <span class="tag ${p.kind==='org'?'sun':p.kind==='student'?'violet':''}">${esc(p.tag||p.kind)}</span></div>
+    <p>${esc(p.text)}</p>
+    <div class="muted">${p.likes} likes · ${p.comments.length} comments</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" onclick="likePost(${p.id})" ${p.id<0?'disabled':''}>${p.liked?'Liked':'Like'}</button>
+    <button class="btn ghost" onclick="commentPost(${p.id})" ${p.id<0?'disabled':''}>Comment</button>
+    ${p.id>0?'':''}</div>
+    ${p.comments.map(c=>`<div class="muted"><b>${esc(c.who)}:</b> ${esc(c.text)}</div>`).join('')}
+  </div>`).join('')||'<p class="empty">Nothing here yet.</p>';
+  const fw=allPeople().filter(p=>p.name!==me()).slice(0,5);
+  $('follow').innerHTML=fw.map(m=>`<div class="item"><div style="display:flex;gap:10px;align-items:center"><div class="av" style="background:${avc(m.name)}">${esc(initials(m.name))}</div><div><b>${esc(m.name)}</b><div class="muted">${esc(m.type)}</div></div></div>
+    ${connTier(m.name)?`<span class="tag">${connTier(m.name)}</span>`:`<button class="btn ghost" onclick="connect('${esc(m.name)}')">Connect</button>`}</div>`).join('');
+}
+
+/* circles */
+function renderCircles(){
+  const tiers=['Close','Friends','Network'];
+  $('tiers').innerHTML=tiers.map(tr=>{const names=Object.keys(store.conns).filter(n=>store.conns[n]===tr);
+    return `<div class="card"><h2>${tr==='Close'?'Close contacts':tr==='Friends'?'Friends':'Network'} <span class="muted">(${names.length})</span></h2>
+    <div class="list">${names.map(n=>`<div class="item"><span>${esc(n)}</span><select onchange="setTier('${esc(n)}',this.value)" style="width:auto">${tiers.map(x=>`<option ${x===tr?'selected':''}>${x}</option>`).join('')}</select></div>`).join('')||'<p class="empty">No one here yet.</p>'}</div></div>`;}).join('');
+  const reqs=allPeople().filter(p=>p.name!==me()&&!store.conns[p.name]).slice(0,4);
+  $('reqs').innerHTML=reqs.map(m=>`<div class="item"><div><b>${esc(m.name)}</b><div class="muted">${esc(m.role)}</div></div><button class="btn" onclick="connect('${esc(m.name)}')">Connect</button></div>`).join('')||'<p class="empty">No new requests.</p>';
+  $('groups').innerHTML=CIRCLES.map(c=>{const j=store.joined.includes(c.name);return `<div class="item"><div><b>${esc(c.name)}</b><div class="muted">For: ${esc(c.members)}</div></div><button class="btn ${j?'ghost':''}" onclick="joinGroup('${esc(c.name)}')">${j?'Joined':'Join'}</button></div>`;}).join('');
+}
+window.joinGroup=n=>{if(!store.joined.includes(n))store.joined.push(n);save();renderCircles();toast('Joined '+n);};
+
+/* CV scorer */
+const SECTIONS=[['experience','Experience'],['education','Education'],['skills','Skills'],['project','Projects']];
+window.scoreCv=()=>{const txt=$('cv-text').value.trim();if(!txt){toast('Paste your CV text first');return;}
+  const low=txt.toLowerCase(),words=txt.split(/\s+/).filter(Boolean).length;
+  const tips=[];let s=0;
+  const wl=words>=300&&words<=900;s+=wl?15:(words>=150?8:0);if(!wl)tips.push(words<300?'Add more detail. Aim for 300 to 900 words.':'Trim to one or two pages.');
+  const contact=/@|\+?\d[\d\s-]{7,}/.test(txt);s+=contact?10:0;if(!contact)tips.push('Add an email and phone number at the top.');
+  const sec=SECTIONS.filter(([k])=>low.includes(k)).length;s+=sec*5;if(sec<4)tips.push('Include clear sections: Experience, Education, Skills and Projects.');
+  const verbs=ACTION.filter(v=>low.includes(v)).length;s+=verbs>=5?20:verbs*4;if(verbs<5)tips.push('Start bullet points with strong verbs such as built, led, designed or improved.');
+  const nums=(txt.match(/\d+%|\$\d|\d{2,}/g)||[]).length;s+=nums>=4?20:nums*5;if(nums<4)tips.push('Show impact with numbers: percentages, counts, money saved or users reached.');
+  const skillHits=SKILLS.filter(x=>low.includes(x.toLowerCase())).length;s+=skillHits>=5?15:skillHits*3;if(skillHits<5)tips.push('List at least 5 relevant skills that match the roles you want.');
+  s=Math.min(100,s);store.cvScore=s;save();
+  const label=s>=80?'Strong':s>=60?'Good, with a few gaps':'Needs work';
+  $('cv-out').innerHTML=`<div style="display:flex;gap:18px;align-items:center;margin-bottom:14px"><div class="ring" style="--p:${s}"><span>${s}</span></div><div><div style="font-size:20px;font-weight:800">${label}</div><div class="muted">${words} words · ${sec} of 4 sections · ${verbs} action verbs · ${nums} numbers · ${skillHits} skills</div></div></div>
+   <h2>Fixes</h2><div class="list">${tips.map(x=>`<div class="item">${esc(x)}</div>`).join('')||'<p class="empty">Nothing to fix. Nice work.</p>'}</div>`;
+};
+
+/* employer console and applications */
+window.postJob=()=>{const title=$('j-title').value.trim(),org=$('j-org').value.trim();if(!title||!org){toast('Add a role title and company');return;}
+  store.jobs.push({id:Date.now(),title,org,field:$('j-field').value,country:$('j-country').value,kind:$('j-kind').value,desc:$('j-desc').value.trim()});
+  save();$('j-title').value='';$('j-org').value='';$('j-desc').value='';renderEmployer();renderOpps();toast('Role published');};
+window.applyOpp=t=>{const exists=store.apps.some(a=>a.job===t&&a.who===me());if(exists){toast('You already applied');return;}
+  store.apps.push({job:t,who:me(),score:store.cvScore,status:'New',at:Date.now()});save();renderOpps();renderEmployer();toast('Application sent');};
+window.setStatus=(i,v)=>{store.apps[i].status=v;save();renderEmployer();};
+function renderEmployer(){
+  const roles=[...store.jobs.map(j=>({title:j.title,org:j.org,country:j.country,kind:j.kind})),...OPPS.map(o=>({title:o.title,org:o.org,country:o.country,kind:o.kind}))];
+  $('jobs').innerHTML=roles.map(r=>{const apps=store.apps.map((a,i)=>({a,i})).filter(x=>x.a.job===r.title);
+    return `<div class="card" style="box-shadow:none"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(r.title)}</b><span class="tag">${apps.length} applicants</span></div>
+    <div class="muted">${esc(r.org)} · ${esc(r.country)} · ${esc(r.kind)}</div>
+    <div class="list" style="margin-top:8px">${apps.map(({a,i})=>`<div class="item"><div><b>${esc(a.who)}</b><div class="muted">CV score: ${a.score==null?'not scored':a.score}</div></div>
+      <select onchange="setStatus(${i},this.value)" style="width:auto">${['New','Shortlisted','Interview','Offer','Declined'].map(x=>`<option ${x===a.status?'selected':''}>${x}</option>`).join('')}</select></div>`).join('')||'<p class="empty">No applicants yet.</p>'}</div></div>`;}).join('');
+}
+
+function employerGate(){const ok=!!(store.profile&&store.profile.kind==='Company or recruiter');$('emp-blocked').style.display=ok?'none':'block';$('emp-open').style.display=ok?'block':'none';}
+function renderAll(){renderFeed();renderCircles();renderEmployer();employerGate();}
+renderAll();
+
+/* ================= Practice: entry-level job simulator ================= */
+const SIM_ROLES=[
+ {id:'eng',title:'Graduate systems engineer',org:'Harbour Aero (sample)',icon:'🛰️',
+  kw:['requirement','test','design','model','subsystem','risk','data','system','verify','team'],
+  qs:[
+   'Tell me about a time something you designed or built did not work the first time. What did you do?',
+   'How would you check that a satellite subsystem meets its requirements before launch?',
+   'Explain a technical idea you worked on to someone who is not an engineer.']},
+ {id:'mkt',title:'Marketing intern',org:'Lotus Works (sample)',icon:'📣',
+  kw:['customer','campaign','audience','budget','measure','social','loyalty','content','results','test'],
+  qs:[
+   'How would you grow a cafe group\'s loyalty app with a small budget?',
+   'Describe a campaign or project you measured. What did you track and what changed?',
+   'A customer leaves a negative review online. What would you do in the first 24 hours?']},
+ {id:'data',title:'Data analyst',org:'Logi Co (sample)',icon:'📦',
+  kw:['data','sql','query','dashboard','trend','delay','shipment','chart','clean','insight'],
+  qs:[
+   'Your delivery delay dashboard shows a sudden spike. What do you check first?',
+   'Explain a SQL query or analysis you have written. What did it answer?',
+   'You present a finding and your manager disagrees. How do you handle it?']}
+];
+let sim={role:null,step:0,answers:[],scores:[]};
+function simRoles(){
+  $('sim-roles').innerHTML=SIM_ROLES.map(r=>`<div class="item" style="cursor:pointer" onclick="startSim('${r.id}')"><div><b>${r.icon} ${esc(r.title)}</b><div class="muted small">${esc(r.org)} · 3 questions</div></div><span class="pill small">Start</span></div>`).join('');
+  renderSimHistory();
+}
+window.startSim=id=>{sim={role:SIM_ROLES.find(r=>r.id===id),step:0,answers:[],scores:[]};renderSim();};
+function scoreAnswer(text,role){
+  const low=text.toLowerCase(),words=text.trim().split(/\s+/).filter(Boolean).length;
+  const tips=[];let s=0;
+  const lenOk=words>=40;s+=lenOk?3:(words>=15?1:0);if(!lenOk)tips.push('Aim for 40 words or more. Walk through what happened step by step.');
+  const star=['situation','task','action','result','first','then','outcome','because','so that','learned'].filter(k=>low.includes(k)).length;
+  s+=star>=3?3:star;if(star<3)tips.push('Use a clear story: what the situation was, what you did, and what happened as a result.');
+  const nums=(text.match(/\d+%?|\$\d+/g)||[]).length;s+=nums>=1?2:0;if(nums<1)tips.push('Add one number, such as a percentage, a count or a time saved.');
+  const kw=role.kw.filter(k=>low.includes(k)).length;s+=kw>=2?2:kw;if(kw<2)tips.push('Use the language of the role: '+role.kw.slice(0,4).join(', ')+'.');
+  return {score:Math.min(10,s),tips,words};
+}
+function renderSim(){
+  const r=sim.role;
+  if(!r){$('sim-main').innerHTML='<p class="empty">Choose a role to start a simulation.</p>';return;}
+  if(sim.step>=r.qs.length){
+    const avg=Math.round(sim.scores.reduce((a,b)=>a+b.score,0)/sim.scores.length*10);
+    const tipset=[...new Set(sim.scores.flatMap(x=>x.tips))];
+    $('sim-main').innerHTML=`<h2>Simulation complete: ${esc(r.title)}</h2>
+      <div class="row gap" style="margin:12px 0"><div class="ring" style="--p:${avg}"><span>${avg}</span></div><div><b>Overall: ${avg}/100</b><div class="muted small">${sim.scores.map(x=>x.score+'/10').join(' · ')}</div></div></div>
+      <h3>What to work on</h3>${tipset.map(x=>`<div class="item">${esc(x)}</div>`).join('')||'<p class="muted">Strong answers across the board.</p>'}
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="startSim('${r.id}')">Try again</button><button class="btn ghost" onclick="saveSim()">Save to history</button></div>`;
+    return;
+  }
+  const chat=[];
+  for(let i=0;i<sim.step;i++){chat.push({who:'manager',text:r.qs[i]});chat.push({who:'me',text:sim.answers[i],score:sim.scores[i]});}
+  chat.push({who:'manager',text:r.qs[sim.step]});
+  $('sim-main').innerHTML=`<div class="row between"><h2>${r.icon} ${esc(r.title)}</h2><span class="pill">Question ${sim.step+1} of ${r.qs.length}</span></div>
+    <p class="muted small">Interviewer: Hiring manager, ${esc(r.org)}</p>
+    <div class="list" style="gap:12px;margin:14px 0">${chat.map(m=>m.who==='manager'
+      ?`<div style="background:#eef3fb;padding:12px 14px;border-radius:14px 14px 14px 4px;max-width:85%"><b class="small">Manager</b><div>${esc(m.text)}</div></div>`
+      :`<div style="background:var(--ink);color:#fff;padding:12px 14px;border-radius:14px 14px 4px 14px;max-width:85%;margin-left:auto"><b class="small">You</b><div>${esc(m.text)}</div>${m.score?`<div class="small" style="opacity:.85;margin-top:6px">Score ${m.score.score}/10 · ${m.score.tips.length?esc(m.score.tips[0]):'Clear and specific.'}</div>`:''}</div>`).join('')}</div>
+    <label>Your answer<textarea id="sim-ans" rows="5" placeholder="Answer as you would in the interview. Try to use a real example."></textarea></label>
+    <div style="margin-top:10px"><button class="btn" onclick="submitSim()">Send answer</button></div>`;
+}
+window.submitSim=()=>{const text=$('sim-ans').value.trim();if(text.split(/\s+/).filter(Boolean).length<5){toast('Write a fuller answer first');return;}
+  const r=sim.role;sim.answers.push(text);sim.scores.push(scoreAnswer(text,r));sim.step++;renderSim();};
+window.saveSim=()=>{if(!sim.role)return;const avg=Math.round(sim.scores.reduce((a,b)=>a+b.score,0)/sim.scores.length*10);
+  store.practice=store.practice||[];store.practice.unshift({role:sim.role.title,avg,at:new Date().toLocaleString('en-AU')});save();renderSimHistory();toast('Saved to your history');};
+function renderSimHistory(){const h=(store.practice||[]);
+  $('sim-history').innerHTML=h.length?h.slice(0,6).map(x=>`<div class="item"><b>${esc(x.role)}</b><div class="muted small">${x.avg}/100 · ${esc(x.at)}</div></div>`).join(''):'<p class="empty">No attempts yet.</p>';}
+simRoles();
+
+/* ================= Messages, startups, events, committee, partners ================= */
+store.messages=store.messages||{};
+store.groups=store.groups||[
+ {id:'g1',name:'Campus Startup Lab',idea:'Peer tutoring marketplace for first-year maths and science.',looking:'Designer, developer',members:['Chloe Wright'],updates:['Week 3: 20 tutors have signed up.'],chat:[{who:'Chloe Wright',text:'Anyone free to review the pitch deck this week?'}],open:true},
+ {id:'g2',name:'Green Energy Ideas',idea:'Low-cost solar monitoring for small shops.',looking:'Engineer, business lead',members:['Amara Okafor'],updates:['Prototype sensor is working on the bench.'],chat:[],open:true},
+ {id:'g3',name:'Cross-border Commerce',idea:'Export help for Australian makers selling into Singapore.',looking:'Marketing, finance',members:['Jordan Lee'],updates:[],chat:[],open:true}];
+store.events=store.events||[
+ {id:'e1',title:'Resume clinic',when:'2026-11-20T10:00',place:'Careers Centre, Level 3',desc:'Book a 15 minute slot and bring your CV.',by:'Careers team',status:'approved',rsvps:[]},
+ {id:'e2',title:'Startup pitch night',when:'2026-11-28T18:00',place:'Melbourne, venue to be confirmed',desc:'Five-minute pitches from student groups, then feedback from alumni founders.',by:'Student committee',status:'approved',rsvps:[]},
+ {id:'e3',title:'Founders over lunch',when:'2026-12-03T12:30',place:'Campus cafe',desc:'Informal lunch for students with a startup idea.',by:'Jordan Lee',status:'pending',rsvps:[]}];
+store.pendingPosts=store.pendingPosts||[
+ {id:'pp1',author:'Priya Nair',text:'Our logistics startup is hiring two interns for Chennai. Share with students who want global experience.',aud:'Public'}];
+const CONTACTS=['Amara Okafor','Priya Nair','Chloe Wright','Jordan Lee','Mei Lin Tan','Ravi Menon'];
+let openChat=null,openGroup=null;
+
+/* messages */
+function renderMsgList(){
+  $('msg-list').innerHTML=CONTACTS.map(n=>{const last=(store.messages[n]||[]).slice(-1)[0];
+    return `<div class="item" style="cursor:pointer" onclick="openThread('${esc(n)}')"><div class="row gap"><div class="avatar sm" style="background:${avc(n)}">${esc(initials(n))}</div><div><b>${esc(n)}</b><div class="muted small">${last?esc(last.text).slice(0,40):'Say hello'}</div></div></div></div>`;}).join('');
+}
+window.openThread=n=>{openChat=n;renderThread();};
+function renderThread(){
+  if(!openChat){$('msg-thread').innerHTML='<p class="empty">Pick a chat to start.</p>';return;}
+  const msgs=store.messages[openChat]||[];
+  $('msg-thread').innerHTML=`<h2>${esc(openChat)}</h2><div class="list" style="gap:10px;min-height:280px;margin:12px 0">${msgs.map(m=>`<div style="max-width:80%;padding:10px 14px;border-radius:14px;${m.me?'margin-left:auto;background:var(--ink);color:#fff':'background:#eef3fb'}">${esc(m.text)}</div>`).join('')||'<p class="empty">No messages yet.</p>'}</div>
+    <div class="row gap"><input id="msg-in" placeholder="Write a message"><button class="btn" onclick="sendMsg()">Send</button></div>`;
+  const inp=$('msg-in');if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+}
+window.sendMsg=()=>{const v=$('msg-in').value.trim();if(!v||!openChat)return;
+  (store.messages[openChat]=store.messages[openChat]||[]).push({me:true,text:v});save();renderThread();renderMsgList();};
+
+/* startups */
+function renderGroups(){
+  $('group-list').innerHTML=store.groups.map(g=>{const joined=g.members.includes(me());
+    return `<div class="card" style="display:grid;gap:8px"><div class="row between"><b style="font-size:17px">${esc(g.name)}</b><span class="pill small">${g.members.length} members</span></div>
+    <p class="small">${esc(g.idea)}</p><div class="muted small">Looking for: ${esc(g.looking)}</div>
+    <div class="row gap"><button class="btn small ${joined?'ghost':''}" onclick="toggleJoin('${g.id}')">${joined?'Leave':'Join'}</button>
+    <button class="btn ghost small" onclick="openGroupView('${g.id}')">Open</button></div></div>`;}).join('');
+}
+window.toggleJoin=id=>{const g=store.groups.find(x=>x.id===id);if(!g)return;const n=me();
+  g.members=g.members.includes(n)?g.members.filter(x=>x!==n):[...g.members,n];save();renderGroups();if(openGroup===id)renderGroupView();};
+window.openGroupView=id=>{openGroup=id;renderGroupView();$('group-detail').scrollIntoView({behavior:'smooth'});};
+function renderGroupView(){
+  const g=store.groups.find(x=>x.id===openGroup);if(!g){$('group-detail').innerHTML='';return;}
+  const joined=g.members.includes(me());
+  $('group-detail').innerHTML=`<div class="card"><div class="row between"><h2>${esc(g.name)}</h2><span class="pill">${g.open?'Chat open':'Chat locked'}</span></div>
+  <p>${esc(g.idea)}</p><h3>Progress updates</h3><div class="list">${g.updates.map(u=>`<div class="item">${esc(u)}</div>`).join('')||'<p class="empty">No updates yet.</p>'}</div>
+  ${joined?`<div class="row gap" style="margin-top:10px"><input id="upd" placeholder="Post a progress update"><button class="btn small" onclick="postUpdate()">Post update</button></div>`:'<p class="muted small">Join the group to post updates and chat.</p>'}
+  <h3 style="margin-top:18px">Group chat</h3><div class="list" style="gap:8px">${g.chat.map(c=>`<div class="item"><b>${esc(c.who)}:</b> ${esc(c.text)}</div>`).join('')||'<p class="empty">No messages yet.</p>'}</div>
+  ${joined&&g.open?`<div class="row gap" style="margin-top:10px"><input id="gchat" placeholder="Message the group"><button class="btn small" onclick="postGroupChat()">Send</button></div>`:(!g.open?'<p class="muted small">The committee has locked this chat.</p>':'')}
+  </div>`;
+}
+window.postUpdate=()=>{const g=store.groups.find(x=>x.id===openGroup);const v=$('upd').value.trim();if(!g||!v)return;g.updates.unshift(v);save();renderGroupView();};
+window.postGroupChat=()=>{const g=store.groups.find(x=>x.id===openGroup);const v=$('gchat').value.trim();if(!g||!v)return;g.chat.push({who:me(),text:v});save();renderGroupView();};
+window.createGroup=()=>{const name=$('sg-name').value.trim(),idea=$('sg-idea').value.trim();if(!name||!idea){toast('Add a name and the idea');return;}
+  const id='g'+Date.now();store.groups.unshift({id,name,idea,looking:$('sg-look').value.trim()||'Open',members:[me()],updates:[],chat:[],open:true});
+  save();$('sg-name').value='';$('sg-idea').value='';$('sg-look').value='';renderGroups();toast('Group created');};
+
+/* events */
+function fmt(d){const x=new Date(d);return isNaN(x)?d:x.toLocaleString('en-AU',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});}
+function renderEvents(){
+  const list=store.events.filter(e=>e.status==='approved').sort((a,b)=>a.when.localeCompare(b.when));
+  $('event-list').innerHTML=list.map(e=>{const going=e.rsvps.includes(me());
+    return `<div class="card" style="margin-bottom:12px;display:grid;gap:6px"><span class="pill small" style="width:max-content">${fmt(e.when)}</span><b style="font-size:16px">${esc(e.title)}</b>
+    <div class="muted small">${esc(e.place)} · by ${esc(e.by)}</div><p class="small">${esc(e.desc)}</p>
+    <div class="row between"><span class="muted small">${e.rsvps.length} going</span><button class="btn small ${going?'ghost':''}" onclick="rsvp('${e.id}')">${going?'Going ✓':'RSVP'}</button></div></div>`;}).join('')||'<p class="empty">No upcoming events.</p>';
+}
+window.rsvp=id=>{const e=store.events.find(x=>x.id===id);if(!e)return;const n=me();e.rsvps=e.rsvps.includes(n)?e.rsvps.filter(x=>x!==n):[...e.rsvps,n];save();renderEvents();};
+window.createEvent=()=>{const title=$('ev-title').value.trim(),when=$('ev-date').value,place=$('ev-place').value.trim();
+  if(!title||!when){toast('Add a title and a date');return;}
+  store.events.push({id:'e'+Date.now(),title,when,place:place||'TBC',desc:$('ev-desc').value.trim(),by:me(),status:'pending',rsvps:[]});save();
+  $('ev-title').value='';$('ev-date').value='';$('ev-place').value='';$('ev-desc').value='';renderEvents();renderCommittee();toast('Sent for committee approval');};
+
+/* committee */
+const ROLE_POWERS={'President':['posts','events','groups','run'],'Secretary':['posts','groups'],'Events lead':['events','run'],'Group moderator':['groups']};
+function isCommittee(){return !!(store.profile&&store.profile.committee);}
+function committeeGate(){const ok=isCommittee();$('com-blocked').style.display=ok?'none':'block';$('com-open').style.display=ok?'block':'none';}
+function renderCommittee(){
+  const role=store.profile?store.profile.committee:'';
+  $('com-role').textContent=role?`Signed in as ${role}. You can: ${(ROLE_POWERS[role]||[]).join(', ')}.`:'';
+  const powers=ROLE_POWERS[role]||[];
+  const posts=[...store.pendingPosts,...store.posts.filter(p=>p.approved===false)];
+  $('com-posts').innerHTML=powers.includes('posts')?(posts.map(p=>`<div class="item"><div><b>${esc(p.author)}</b><div class="small">${esc(p.text)}</div></div>
+    <div class="row gap" style="margin-top:6px"><button class="btn small" onclick="approvePost('${p.id}',true)">Approve</button><button class="btn ghost small" onclick="approvePost('${p.id}',false)">Remove</button></div></div>`).join('')||'<p class="empty">No pending posts.</p>'):'<p class="empty">Your role does not approve posts.</p>';
+  const evs=store.events.filter(e=>e.status==='pending');
+  $('com-events').innerHTML=powers.includes('events')?(evs.map(e=>`<div class="item"><div><b>${esc(e.title)}</b><div class="small muted">${fmt(e.when)} · ${esc(e.by)}</div></div>
+    <div class="row gap" style="margin-top:6px"><button class="btn small" onclick="setEvent('${e.id}','approved')">Approve</button><button class="btn ghost small" onclick="setEvent('${e.id}','rejected')">Reject</button></div></div>`).join('')||'<p class="empty">No pending events.</p>'):'<p class="empty">Your role does not approve events.</p>';
+  $('com-groups').innerHTML=powers.includes('groups')?(store.groups.map(g=>`<div class="item"><div><b>${esc(g.name)}</b><div class="small muted">${g.members.length} members</div></div>
+    <div class="row gap"><button class="btn ghost small" onclick="toggleChat('${g.id}')">${g.open?'Lock chat':'Open chat'}</button><button class="btn ghost small" onclick="removeGroup('${g.id}')">Remove</button></div></div>`).join(''))
+    :'<p class="empty">Your role does not manage groups.</p>';
+  $('com-run').innerHTML=powers.includes('run')?(store.events.filter(e=>e.status==='approved').map(e=>`<div class="item"><div><b>${esc(e.title)}</b><div class="small muted">${e.rsvps.length} going</div></div>
+    <button class="btn ghost small" onclick="removeEvent('${e.id}')">Cancel</button></div>`).join('')||'<p class="empty">No events.</p>'):'<p class="empty">Your role does not run events.</p>';
+}
+window.approvePost=(id,ok)=>{const p=store.pendingPosts.find(x=>x.id===id);if(p){if(ok){store.posts.unshift({id:Date.now(),approved:true,author:p.author,role:'Member',aud:p.aud,text:p.text,likes:0,liked:false,comments:[],kind:'member',tag:''});}store.pendingPosts=store.pendingPosts.filter(x=>x.id!==id);}
+  const q=store.posts.find(x=>String(x.id)===String(id));if(q){if(ok)q.approved=true;else store.posts=store.posts.filter(x=>x!==q);}
+  save();renderCommittee();renderFeed();toast(ok?'Post approved':'Post removed');};
+window.setEvent=(id,st)=>{const e=store.events.find(x=>x.id===id);if(e)e.status=st;save();renderCommittee();renderEvents();};
+window.toggleChat=id=>{const g=store.groups.find(x=>x.id===id);if(g)g.open=!g.open;save();renderCommittee();renderGroups();renderGroupView();};
+window.removeGroup=id=>{store.groups=store.groups.filter(x=>x.id!==id);if(openGroup===id)openGroup=null;save();renderCommittee();renderGroups();renderGroupView();};
+window.removeEvent=id=>{store.events=store.events.filter(x=>x.id!==id);save();renderCommittee();renderEvents();};
+
+/* init */
+renderMsgList();renderGroups();renderEvents();renderCommittee();committeeGate();
+</script>
+</body></html>
