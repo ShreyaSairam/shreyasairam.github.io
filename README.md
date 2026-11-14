@@ -14,6 +14,7 @@ AI and data analytics projects, each with a demo.
 | Football Analytics Dashboard | Shot maps, xG, heatmaps and a SQL explorer for France at the 2018 World Cup. | [Live](https://shreyasairam-projects.streamlit.app/football) |
 | WanderWise | Hybrid travel recommender with live weather, location and a Gemini chat panel. | [Live](https://shreyasairam-projects.streamlit.app/wanderwise) |
 | Genetic Testing Decision Support | GP tool that recommends a genetic test from symptoms, with consent, pseudonymisation, role based access, overseas transfer checks, a SHA-256 chained audit trail and calibrated confidence. Mapped to GDPR, APPI, EU AI Act, SOC 2 and ISO 27001. | [Try it](genetic-testing/index.html) · [Code](genetic-testing/code) |
+| Southbridge | Team concept: a careers network linking Australian graduates with alumni, small businesses and founders across Asia. Browser prototype with sample data. | [Open the prototype](southbridge/index.html) |
 
 The five demo projects are working rebuilds of earlier university and personal projects, made on open datasets. Code: https://github.com/ShreyaSairam/portfolio
 
